@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+
+# Virtual Environment
+venv/
+.venv/
+ENV/
+env/
+afrofuture_env/
+
+# Environment variables (API KEYS!)
+.env
+.env.local
+.env.*.local
+
+# User data
+user_preferences.json
+search_cache.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Streamlit
+.streamlit/
+*.pid
