@@ -816,7 +816,7 @@ def main():
     
     search_query = "Nigeria tech innovation"
     
-    # ============================================================
+        # ============================================================
     # HEADER - Mobile Optimized
     # ============================================================
     st.markdown("""
@@ -842,11 +842,38 @@ def main():
     """, unsafe_allow_html=True)
     
     # ============================================================
-    # CSS
+    # CSS - Mobile Optimized with Dark Mode Fix
     # ============================================================
     st.markdown(f"""
     <style>
-        .main {{ background: {colors["bg"]}; }}
+        /* ===== FIX: Dark Background for Mobile ===== */
+        html, body, .stApp, .main {{
+            background-color: #0a0a1a !important;
+            background: {colors["bg"]} !important;
+            color: {colors["text"]} !important;
+        }}
+        
+        /* ===== Force dark background on all devices ===== */
+        .stApp {{
+            background-color: #0a0a1a !important;
+            background: {colors["bg"]} !important;
+        }}
+        
+        /* ===== Mobile Specific Fix ===== */
+        @media (max-width: 768px) {{
+            .stApp, .main, .stApp > div {{
+                background-color: #0a0a1a !important;
+                background: linear-gradient(135deg, #0f0f1a 0%, #1a0a2e 50%, #0f1a2e 100%) !important;
+            }}
+        }}
+        
+        @media (max-width: 480px) {{
+            .stApp, .main, .stApp > div {{
+                background-color: #0a0a1a !important;
+                background: linear-gradient(135deg, #0f0f1a 0%, #1a0a2e 50%, #0f1a2e 100%) !important;
+            }}
+        }}
+        
         #MainMenu {{visibility: hidden;}}
         footer {{visibility: hidden;}}
         ::-webkit-scrollbar {{width: 6px;}}
@@ -1136,6 +1163,24 @@ def main():
             background: {colors["accent"]};
             color: #0a0a1a;
             border-color: {colors["accent"]};
+        }}
+        
+        /* ===== FORCE DARK BACKGROUND ON ALL DEVICES ===== */
+        .stApp > div {{
+            background-color: #0a0a1a !important;
+            background: {colors["bg"]} !important;
+        }}
+        
+        /* ===== FIX FOR WHITE FLASH ON LOAD ===== */
+        .stApp {{
+            background-color: #0a0a1a !important;
+            background: {colors["bg"]} !important;
+            min-height: 100vh !important;
+        }}
+        
+        /* ===== ENSURE TEXT IS VISIBLE ===== */
+        .stMarkdown, .stText, .stCaption, .stException {{
+            color: {colors["text"]} !important;
         }}
     </style>
     """, unsafe_allow_html=True)
