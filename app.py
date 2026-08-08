@@ -817,299 +817,225 @@ def main():
     search_query = "Nigeria tech innovation"
     
         # ============================================================
-    # HEADER - Mobile Optimized
-    # ============================================================
-    st.markdown("""
-    <div style="text-align:center; padding: 8px 0 2px 0;">
-        <h1 style="font-size: 2.2rem; font-weight:800; background: linear-gradient(135deg, #f0c040, #ff6b35, #f0c040); background-size: 300% 300%; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: gradientShift 4s ease-in-out infinite; margin-bottom: 0;">🎬 Hacks Stream</h1>
-        <p style="color: #888; font-size: 0.75rem; letter-spacing: 4px; margin-top: -4px;">✦ AI-Powered Video Discovery · Faith · Technology · African Innovation ✦</p>
-    </div>
-    <style>
-        @keyframes gradientShift {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-        @media (max-width: 768px) {
-            h1 { font-size: 1.6rem !important; }
-            p { font-size: 0.6rem !important; letter-spacing: 2px !important; }
-        }
-        @media (max-width: 480px) {
-            h1 { font-size: 1.3rem !important; }
-            p { font-size: 0.5rem !important; letter-spacing: 1px !important; }
-        }
-    </style>
-    """, unsafe_allow_html=True)
-    
-    # ============================================================
-    # CSS - Mobile Optimized with Dark Mode Fix
+    # CSS - COMPLETE DARK THEME FOR MOBILE & DESKTOP
     # ============================================================
     st.markdown(f"""
     <style>
-        /* ===== FIX: Dark Background for Mobile ===== */
-        html, body, .stApp, .main {{
+        /* ===== GLOBAL RESET - Force Dark Theme Everywhere ===== */
+        html, body, .stApp, .main, .stApp > div, .stApp > div > div {{
             background-color: #0a0a1a !important;
             background: {colors["bg"]} !important;
             color: {colors["text"]} !important;
         }}
         
-        /* ===== Force dark background on all devices ===== */
+        /* ===== FORCE DARK BACKGROUND ON ALL ELEMENTS ===== */
         .stApp {{
             background-color: #0a0a1a !important;
             background: {colors["bg"]} !important;
+            min-height: 100vh !important;
         }}
         
-        /* ===== Mobile Specific Fix ===== */
-        @media (max-width: 768px) {{
-            .stApp, .main, .stApp > div {{
-                background-color: #0a0a1a !important;
-                background: linear-gradient(135deg, #0f0f1a 0%, #1a0a2e 50%, #0f1a2e 100%) !important;
-            }}
+        /* ===== OVERRIDE STREAMLIT DEFAULT WHITE BACKGROUNDS ===== */
+        .element-container, .stMarkdown, .stText, .stCaption {{
+            background: transparent !important;
+            color: {colors["text"]} !important;
         }}
         
-        @media (max-width: 480px) {{
-            .stApp, .main, .stApp > div {{
-                background-color: #0a0a1a !important;
-                background: linear-gradient(135deg, #0f0f1a 0%, #1a0a2e 50%, #0f1a2e 100%) !important;
-            }}
+        /* ===== SIDEBAR DARK THEME ===== */
+        .css-1d391kg, .stSidebar, [data-testid="stSidebar"] {{
+            background-color: #0f0f1a !important;
+            background: linear-gradient(180deg, #0f0f1a 0%, #1a0a2e 100%) !important;
+            border-right: 1px solid rgba(255,255,255,0.05) !important;
         }}
         
-        #MainMenu {{visibility: hidden;}}
-        footer {{visibility: hidden;}}
-        ::-webkit-scrollbar {{width: 6px;}}
-        ::-webkit-scrollbar-track {{background: #0a0a1a;}}
-        ::-webkit-scrollbar-thumb {{background: {colors["accent"]}; border-radius: 10px;}}
+        /* ===== SIDEBAR TEXT ===== */
+        .css-1d391kg .stMarkdown, .css-1d391kg p, .css-1d391kg label {{
+            color: #e0e0e0 !important;
+        }}
         
+        /* ===== HEADER - Dark with Legible Text ===== */
+        .app-title h1 {{
+            font-size: 2.2rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #f0c040, #ff6b35, #f0c040);
+            background-size: 300% 300%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: gradientShift 4s ease-in-out infinite;
+            margin-bottom: 0;
+        }}
+        
+        .app-subtitle {{
+            color: #cccccc !important;
+            font-size: 0.85rem;
+            letter-spacing: 4px;
+            margin-top: -5px;
+        }}
+        
+        /* ===== SEARCH BAR ===== */
         .search-container {{ display: flex; justify-content: center; margin: 15px 0 20px 0; padding: 0 8px; }}
         .search-wrapper {{
             display: flex;
             align-items: center;
-            background: {colors["input_bg"]};
+            background: rgba(255,255,255,0.08) !important;
             border-radius: 50px;
             padding: 4px 4px 4px 20px;
-            border: 1px solid {colors["border"]};
+            border: 1px solid rgba(255,255,255,0.1) !important;
             width: 100%;
             max-width: 700px;
             transition: all 0.3s ease;
         }}
-        .search-wrapper:hover {{ border-color: {colors["accent"]}40; }}
-        .search-wrapper:focus-within {{ border-color: {colors["accent"]}; box-shadow: 0 0 30px {colors["accent"]}20; }}
+        .search-wrapper:hover {{ border-color: rgba(240, 192, 64, 0.3) !important; }}
+        .search-wrapper:focus-within {{ border-color: #f0c040 !important; box-shadow: 0 0 30px rgba(240, 192, 64, 0.1); }}
         .search-wrapper input {{
             flex: 1;
-            background: transparent;
-            border: none;
-            color: {colors["text"]};
+            background: transparent !important;
+            border: none !important;
+            color: #ffffff !important;
             font-size: 1rem;
             padding: 12px 0;
             outline: none;
             min-width: 0;
         }}
-        .search-wrapper input::placeholder {{ color: {colors["text_secondary"]}; }}
+        .search-wrapper input::placeholder {{ color: #888888 !important; }}
+        .search-wrapper input:focus {{ box-shadow: none !important; }}
+        
         .search-btn {{
-            background: linear-gradient(135deg, {colors["accent"]}, #e6a800);
-            color: #0a0a1a;
-            border: none;
-            border-radius: 50px;
-            padding: 10px 28px;
-            font-weight: 700;
+            background: linear-gradient(135deg, #f0c040, #e6a800) !important;
+            color: #0a0a1a !important;
+            border: none !important;
+            border-radius: 50px !important;
+            padding: 10px 28px !important;
+            font-weight: 700 !important;
             cursor: pointer;
             transition: all 0.3s ease;
             font-size: 0.9rem;
             white-space: nowrap;
         }}
-        .search-btn:hover {{ transform: scale(1.03); box-shadow: 0 8px 30px {colors["accent"]}50; }}
+        .search-btn:hover {{ transform: scale(1.03); box-shadow: 0 8px 30px rgba(240, 192, 64, 0.3); }}
         
+        /* ===== MOBILE SEARCH ===== */
         @media (max-width: 768px) {{
             .search-wrapper {{ border-radius: 30px; padding: 3px 3px 3px 16px; }}
             .search-wrapper input {{ font-size: 0.85rem; padding: 8px 0; }}
             .search-wrapper input::placeholder {{ font-size: 0.75rem; }}
-            .search-btn {{ font-size: 0.7rem; padding: 6px 14px; }}
+            .search-btn {{ font-size: 0.7rem; padding: 6px 14px !important; }}
         }}
         @media (max-width: 480px) {{
             .search-wrapper {{ border-radius: 25px; padding: 2px 2px 2px 12px; }}
             .search-wrapper input {{ font-size: 0.75rem; padding: 6px 0; }}
             .search-wrapper input::placeholder {{ font-size: 0.65rem; }}
-            .search-btn {{ font-size: 0.6rem; padding: 4px 10px; }}
+            .search-btn {{ font-size: 0.6rem; padding: 4px 10px !important; }}
         }}
         
-        .progress-container {{
-            width: 100%;
-            max-width: 700px;
-            margin: 20px auto;
-            padding: 15px 25px;
-            background: {colors["card"]};
-            border-radius: 16px;
-            border: 1px solid {colors["border"]};
-            backdrop-filter: blur(10px);
-        }}
-        .progress-label {{ display: flex; justify-content: space-between; font-size: 0.8rem; color: {colors["text_secondary"]}; margin-bottom: 8px; }}
-        .progress-label .highlight {{ color: {colors["accent"]}; font-weight: 600; }}
-        .progress-track {{ width: 100%; height: 6px; background: {colors["border"]}; border-radius: 10px; overflow: hidden; position: relative; }}
-        .progress-fill {{
-            height: 100%;
-            border-radius: 10px;
-            background: linear-gradient(90deg, {colors["accent"]}, #ff6b35, #a855f7);
-            background-size: 200% 100%;
-            animation: shimmer 2s ease-in-out infinite;
-            transition: width 0.5s ease;
-            width: 0%;
-        }}
-        @keyframes shimmer {{ 0% {{ background-position: 200% 0; }} 100% {{ background-position: -200% 0; }} }}
-        .progress-percent {{ text-align: center; font-size: 0.75rem; color: {colors["text_secondary"]}; margin-top: 6px; }}
-        .progress-percent .number {{ color: {colors["accent"]}; font-weight: 700; font-size: 0.9rem; }}
-        
-        @media (max-width: 768px) {{
-            .progress-container {{ padding: 10px 15px; margin: 10px auto; }}
-            .progress-label {{ font-size: 0.7rem; }}
-            .progress-percent {{ font-size: 0.65rem; }}
-        }}
-        
+        /* ===== VIDEO CARDS ===== */
         .video-card {{
-            background: {colors["card"]};
+            background: rgba(20, 20, 40, 0.85) !important;
             backdrop-filter: blur(20px);
             border-radius: 16px;
             overflow: hidden;
-            border: 1px solid {colors["border"]};
+            border: 1px solid rgba(255,255,255,0.06) !important;
             transition: all 0.4s ease;
             margin-bottom: 10px;
         }}
-        .video-card:hover {{ border-color: {colors["accent"]}40; transform: translateY(-2px); box-shadow: 0 20px 60px rgba(0,0,0,0.5); }}
-        .video-thumbnail {{ width: 100%; aspect-ratio: 16/9; object-fit: cover; border-radius: 16px 16px 0 0; transition: all 0.3s ease; }}
-        .video-thumbnail:hover {{ transform: scale(1.02); }}
-        .video-info {{ padding: 16px 20px 20px 20px; }}
-        .video-title-text {{ font-size: 1.3rem; font-weight: 700; color: {colors["text"]}; line-height: 1.4; margin-bottom: 6px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }}
-        .video-channel {{ font-size: 0.9rem; color: {colors["text_secondary"]}; margin-bottom: 8px; }}
-        .video-channel strong {{ color: {colors["accent"]}; font-weight: 600; }}
+        .video-card:hover {{ border-color: rgba(240, 192, 64, 0.2) !important; transform: translateY(-2px); box-shadow: 0 20px 60px rgba(0,0,0,0.5); }}
         
-        @media (max-width: 768px) {{
-            .video-card {{ border-radius: 12px; margin: 6px 0; }}
-            .video-info {{ padding: 12px 14px 16px 14px; }}
-            .video-title-text {{ font-size: 1rem; }}
-            .video-channel {{ font-size: 0.75rem; }}
+        .video-title-text {{
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #ffffff !important;
+            line-height: 1.4;
+            margin-bottom: 6px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
         }}
-        @media (max-width: 480px) {{
-            .video-title-text {{ font-size: 0.85rem; }}
-            .video-channel {{ font-size: 0.65rem; }}
+        .video-channel {{
+            font-size: 0.9rem;
+            color: #aaaaaa !important;
+            margin-bottom: 8px;
+        }}
+        .video-channel strong {{ color: #f0c040 !important; font-weight: 600; }}
+        
+        /* ===== SYNOPSIS ===== */
+        .synopsis-box {{
+            background: rgba(255,255,255,0.04) !important;
+            border-radius: 12px;
+            padding: 14px 18px;
+            margin: 10px 0 12px 0;
+            border-left: 3px solid #f0c040 !important;
+        }}
+        .synopsis-box .synopsis-label {{
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #999999 !important;
+            margin-bottom: 4px;
+        }}
+        .synopsis-box .synopsis-text {{
+            font-size: 0.9rem;
+            color: #dddddd !important;
+            line-height: 1.5;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
         }}
         
-        .synopsis-box {{ background: {colors["border"]}; border-radius: 12px; padding: 14px 18px; margin: 10px 0 12px 0; border-left: 3px solid {colors["accent"]}; }}
-        .synopsis-box .synopsis-label {{ font-size: 0.7rem; text-transform: uppercase; letter-spacing: 2px; color: {colors["text_secondary"]}; margin-bottom: 4px; }}
-        .synopsis-box .synopsis-text {{ font-size: 0.9rem; color: {colors["text"]}; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }}
-        
-        @media (max-width: 768px) {{
-            .synopsis-box {{ padding: 10px 14px; }}
-            .synopsis-text {{ font-size: 0.8rem; }}
+        /* ===== STATS ===== */
+        .stat-box {{
+            background: rgba(255,255,255,0.04) !important;
+            border-radius: 12px;
+            padding: 12px 16px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.05) !important;
         }}
+        .stat-number {{ font-size: 1.1rem; font-weight: 700; color: #f0c040 !important; }}
+        .stat-label {{ font-size: 0.65rem; color: #888888 !important; text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }}
         
-        .preview-container {{ position: relative; width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 12px; overflow: hidden; margin: 10px 0; }}
-        .preview-container iframe {{ width: 100%; height: 100%; border: none; }}
-        .preview-label {{ font-size: 0.7rem; color: {colors["text_secondary"]}; text-align: center; margin-top: 4px; }}
-        
+        /* ===== TAGS ===== */
         .tags-container {{ display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 8px 0; }}
-        .tag {{ display: inline-block; padding: 3px 14px; border-radius: 30px; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }}
-        .tag-tech {{ background: #00d4ff20; color: #00d4ff; border: 1px solid #00d4ff30; }}
-        .tag-faith {{ background: #ffd70020; color: #ffd700; border: 1px solid #ffd70030; }}
-        .tag-africa {{ background: #ff6b3520; color: #ff6b35; border: 1px solid #ff6b3530; }}
-        .tag-future {{ background: #a855f720; color: #a855f7; border: 1px solid #a855f730; }}
-        .tag-fun {{ background: #22d3ee20; color: #22d3ee; border: 1px solid #22d3ee30; }}
-        .tag-default {{ background: {colors["border"]}; color: {colors["text_secondary"]}; }}
+        .tag {{
+            display: inline-block;
+            padding: 3px 14px;
+            border-radius: 30px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }}
+        .tag-tech {{ background: #00d4ff20 !important; color: #00d4ff !important; border: 1px solid #00d4ff30 !important; }}
+        .tag-faith {{ background: #ffd70020 !important; color: #ffd700 !important; border: 1px solid #ffd70030 !important; }}
+        .tag-africa {{ background: #ff6b3520 !important; color: #ff6b35 !important; border: 1px solid #ff6b3530 !important; }}
+        .tag-future {{ background: #a855f720 !important; color: #a855f7 !important; border: 1px solid #a855f730 !important; }}
+        .tag-fun {{ background: #22d3ee20 !important; color: #22d3ee !important; border: 1px solid #22d3ee30 !important; }}
+        .tag-default {{ background: rgba(255,255,255,0.06) !important; color: #aaaaaa !important; border: 1px solid rgba(255,255,255,0.06) !important; }}
         
+        /* ===== RECOMMENDATION CARDS ===== */
         .rec-card {{
-            background: {colors["card"]};
+            background: rgba(20, 20, 40, 0.7) !important;
             border-radius: 14px;
             overflow: hidden;
-            border: 1px solid {colors["border"]};
+            border: 1px solid rgba(255,255,255,0.04) !important;
             transition: all 0.4s ease;
             cursor: pointer;
             height: 100%;
         }}
-        .rec-card:hover {{ background: {colors["hover"]}; border-color: {colors["accent"]}40; transform: translateY(-6px); box-shadow: 0 15px 40px rgba(0,0,0,0.4); }}
-        .rec-thumbnail {{ width: 100%; aspect-ratio: 16/9; object-fit: cover; border-radius: 14px 14px 0 0; }}
-        .rec-info {{ padding: 14px 16px 16px 16px; }}
-        .rec-title {{ font-size: 0.85rem; font-weight: 600; color: {colors["text"]}; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.6em; }}
-        .rec-channel {{ font-size: 0.7rem; color: {colors["text_secondary"]}; margin-top: 4px; }}
-        .rec-score {{ font-size: 0.7rem; color: {colors["accent"]}; font-weight: 700; margin-top: 6px; display: flex; align-items: center; gap: 4px; }}
-        
-        @media (max-width: 768px) {{
-            .rec-card {{ border-radius: 10px; }}
-            .rec-info {{ padding: 10px 12px 12px 12px; }}
-            .rec-title {{ font-size: 0.7rem; min-height: 2.2em; }}
-            .rec-channel {{ font-size: 0.6rem; }}
-            .rec-score {{ font-size: 0.6rem; }}
+        .rec-card:hover {{ background: rgba(30, 30, 60, 0.9) !important; border-color: rgba(240, 192, 64, 0.2) !important; transform: translateY(-6px); box-shadow: 0 15px 40px rgba(0,0,0,0.4); }}
+        .rec-title {{
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #ffffff !important;
+            line-height: 1.3;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            min-height: 2.6em;
         }}
-        @media (max-width: 480px) {{
-            .rec-title {{ font-size: 0.65rem; min-height: 2em; }}
-            .rec-channel {{ font-size: 0.55rem; }}
-            .rec-score {{ font-size: 0.55rem; }}
-        }}
-        
-        .mode-badge {{ display: inline-block; padding: 8px 20px; border-radius: 30px; font-weight: 700; font-size: 0.85rem; letter-spacing: 1px; }}
-        .mode-day {{ background: #00d4ff20; color: #00d4ff; border: 1px solid #00d4ff40; }}
-        .mode-evening {{ background: #ffd70020; color: #ffd700; border: 1px solid #ffd70040; }}
-        
-        .learning-badge {{
-            display: inline-block;
-            padding: 4px 14px;
-            border-radius: 12px;
-            font-size: 0.7rem;
-            background: #00ff8820;
-            color: #00ff88;
-            border: 1px solid #00ff8840;
-            animation: pulse 2s ease-in-out infinite;
-        }}
-        @keyframes pulse {{ 0% {{ opacity: 0.7; }} 50% {{ opacity: 1; }} 100% {{ opacity: 0.7; }} }}
-        
-        .stat-box {{ background: {colors["border"]}; border-radius: 12px; padding: 12px 16px; text-align: center; border: 1px solid {colors["border"]}; }}
-        .stat-number {{ font-size: 1.1rem; font-weight: 700; color: {colors["accent"]}; }}
-        .stat-label {{ font-size: 0.65rem; color: {colors["text_secondary"]}; text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }}
-        
-        @media (max-width: 768px) {{
-            .stat-box {{ padding: 8px 10px; }}
-            .stat-number {{ font-size: 0.9rem; }}
-            .stat-label {{ font-size: 0.5rem; }}
-        }}
-        @media (max-width: 480px) {{
-            .stat-number {{ font-size: 0.8rem; }}
-            .stat-box {{ padding: 4px 6px; }}
-        }}
-        
-        .journey-item {{ display: flex; align-items: center; gap: 12px; padding: 8px 12px; border-radius: 10px; background: {colors["border"]}; margin-bottom: 6px; transition: all 0.3s ease; }}
-        .journey-item:hover {{ background: {colors["hover"]}; }}
-        .journey-thumbnail {{ width: 60px; height: 40px; border-radius: 6px; object-fit: cover; flex-shrink: 0; }}
-        .journey-info {{ flex: 1; min-width: 0; }}
-        .journey-title {{ font-size: 0.8rem; color: {colors["text"]}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }}
-        .journey-action {{ font-size: 0.7rem; color: {colors["text_secondary"]}; flex-shrink: 0; }}
-        .journey-action.liked {{ color: #ff6b6b; }}
-        .journey-action.skipped {{ color: #ff6b6b; opacity: 0.5; }}
-        .journey-action.watched {{ color: #4ecdc4; }}
-        
-        .analytics-card {{ background: {colors["border"]}; border-radius: 12px; padding: 12px 16px; text-align: center; border: 1px solid {colors["border"]}; }}
-        .analytics-number {{ font-size: 1.5rem; font-weight: 700; color: {colors["accent"]}; }}
-        .analytics-label {{ font-size: 0.6rem; color: {colors["text_secondary"]}; text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }}
-        
-        @media (max-width: 768px) {{
-            .analytics-card {{ padding: 8px 10px; }}
-            .analytics-number {{ font-size: 1.1rem; }}
-            .analytics-label {{ font-size: 0.5rem; }}
-        }}
-        
-        /* ===== RECOMMENDATIONS GRID ===== */
-        .rec-grid {{
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 15px;
-            padding: 0 4px;
-        }}
-        
-        @media (max-width: 1024px) {{
-            .rec-grid {{ grid-template-columns: repeat(3, 1fr); gap: 12px; }}
-        }}
-        @media (max-width: 768px) {{
-            .rec-grid {{ grid-template-columns: repeat(2, 1fr); gap: 8px; }}
-        }}
-        @media (max-width: 480px) {{
-            .rec-grid {{ grid-template-columns: repeat(2, 1fr); gap: 6px; }}
-        }}
+        .rec-channel {{ font-size: 0.7rem; color: #999999 !important; margin-top: 4px; }}
+        .rec-score {{ font-size: 0.7rem; color: #f0c040 !important; font-weight: 700; margin-top: 6px; display: flex; align-items: center; gap: 4px; }}
         
         /* ===== BUTTONS ===== */
         .stButton > button {{
@@ -1121,36 +1047,110 @@ def main():
             border: none !important;
             transition: all 0.3s ease !important;
             width: 100% !important;
+            background: rgba(255,255,255,0.08) !important;
+            color: #ffffff !important;
         }}
         .stButton > button:hover {{
             transform: translateY(-2px);
             box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+            background: rgba(240, 192, 64, 0.2) !important;
+        }}
+        .stButton > button[kind="primary"] {{
+            background: linear-gradient(135deg, #f0c040, #e6a800) !important;
+            color: #0a0a1a !important;
+        }}
+        .stButton > button[kind="primary"]:hover {{
+            box-shadow: 0 8px 30px rgba(240, 192, 64, 0.3);
         }}
         
-        @media (max-width: 768px) {{
-            .stButton > button {{ padding: 0.4rem 0.8rem !important; font-size: 0.75rem !important; min-height: 38px !important; }}
-        }}
-        @media (max-width: 480px) {{
-            .stButton > button {{ font-size: 0.65rem !important; padding: 0.3rem 0.6rem !important; min-height: 32px !important; }}
+        /* ===== MODE BADGE ===== */
+        .mode-day {{ background: #00d4ff20 !important; color: #00d4ff !important; border: 1px solid #00d4ff40 !important; }}
+        .mode-evening {{ background: #ffd70020 !important; color: #ffd700 !important; border: 1px solid #ffd70040 !important; }}
+        .mode-badge {{
+            display: inline-block;
+            padding: 8px 20px;
+            border-radius: 30px;
+            font-weight: 700;
+            font-size: 0.85rem;
+            letter-spacing: 1px;
         }}
         
-        /* ===== SIDEBAR ===== */
-        .css-1d391kg {{ padding: 0.5rem 0.8rem !important; }}
+        /* ===== LEARNING BADGE ===== */
+        .learning-badge {{
+            display: inline-block;
+            padding: 4px 14px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            background: #00ff8820 !important;
+            color: #00ff88 !important;
+            border: 1px solid #00ff8840 !important;
+            animation: pulse 2s ease-in-out infinite;
+        }}
+        @keyframes pulse {{ 0% {{ opacity: 0.7; }} 50% {{ opacity: 1; }} 100% {{ opacity: 0.7; }} }}
+        
+        /* ===== JOURNEY ITEMS ===== */
+        .journey-item {{
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 12px;
+            border-radius: 10px;
+            background: rgba(255,255,255,0.03) !important;
+            margin-bottom: 6px;
+            transition: all 0.3s ease;
+        }}
+        .journey-item:hover {{ background: rgba(255,255,255,0.06) !important; }}
+        .journey-title {{ font-size: 0.8rem; color: #dddddd !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }}
+        .journey-action {{ font-size: 0.7rem; flex-shrink: 0; }}
+        .journey-action.liked {{ color: #ff6b6b !important; }}
+        .journey-action.skipped {{ color: #ff6b6b !important; opacity: 0.5; }}
+        .journey-action.watched {{ color: #4ecdc4 !important; }}
+        
+        /* ===== ANALYTICS ===== */
+        .analytics-card {{
+            background: rgba(255,255,255,0.03) !important;
+            border-radius: 12px;
+            padding: 12px 16px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.04) !important;
+        }}
+        .analytics-number {{ font-size: 1.5rem; font-weight: 700; color: #f0c040 !important; }}
+        .analytics-label {{ font-size: 0.6rem; color: #888888 !important; text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }}
+        
+        /* ===== PROGRESS BAR ===== */
+        .progress-container {{
+            width: 100%;
+            max-width: 700px;
+            margin: 20px auto;
+            padding: 15px 25px;
+            background: rgba(20, 20, 40, 0.7) !important;
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.06) !important;
+            backdrop-filter: blur(10px);
+        }}
+        .progress-label {{ display: flex; justify-content: space-between; font-size: 0.8rem; color: #aaaaaa !important; margin-bottom: 8px; }}
+        .progress-label .highlight {{ color: #f0c040 !important; font-weight: 600; }}
+        .progress-track {{ width: 100%; height: 6px; background: rgba(255,255,255,0.06) !important; border-radius: 10px; overflow: hidden; position: relative; }}
+        .progress-fill {{
+            height: 100%;
+            border-radius: 10px;
+            background: linear-gradient(90deg, #f0c040, #ff6b35, #a855f7);
+            background-size: 200% 100%;
+            animation: shimmer 2s ease-in-out infinite;
+            transition: width 0.5s ease;
+            width: 0%;
+        }}
+        @keyframes shimmer {{ 0% {{ background-position: 200% 0; }} 100% {{ background-position: -200% 0; }} }}
+        .progress-percent {{ text-align: center; font-size: 0.75rem; color: #888888 !important; margin-top: 6px; }}
+        .progress-percent .number {{ color: #f0c040 !important; font-weight: 700; font-size: 0.9rem; }}
         
         /* ===== FILTERS ===== */
-        .filter-container {{
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-            justify-content: center;
-            margin: 8px 0;
-        }}
         .filter-btn {{
             padding: 6px 14px;
             border-radius: 30px;
-            border: 1px solid {colors["border"]};
-            background: {colors["card"]};
-            color: {colors["text"]};
+            border: 1px solid rgba(255,255,255,0.1) !important;
+            background: rgba(255,255,255,0.04) !important;
+            color: #dddddd !important;
             cursor: pointer;
             transition: all 0.3s ease;
             font-size: 0.75rem;
@@ -1160,30 +1160,92 @@ def main():
             text-align: center;
         }}
         .filter-btn:hover {{
-            background: {colors["accent"]};
-            color: #0a0a1a;
-            border-color: {colors["accent"]};
+            background: rgba(240, 192, 64, 0.15) !important;
+            border-color: rgba(240, 192, 64, 0.3) !important;
+            color: #ffffff !important;
         }}
         
-        /* ===== FORCE DARK BACKGROUND ON ALL DEVICES ===== */
-        .stApp > div {{
-            background-color: #0a0a1a !important;
-            background: {colors["bg"]} !important;
+        /* ===== RESPONSIVE MOBILE FIXES ===== */
+        @media (max-width: 768px) {{
+            .app-title h1 {{ font-size: 1.6rem !important; }}
+            .video-card {{ border-radius: 12px; margin: 6px 0; }}
+            .video-info {{ padding: 12px 14px 16px 14px; }}
+            .video-title-text {{ font-size: 1rem; }}
+            .video-channel {{ font-size: 0.75rem; }}
+            .stat-box {{ padding: 8px 10px; }}
+            .stat-number {{ font-size: 0.9rem; }}
+            .stat-label {{ font-size: 0.5rem; }}
+            .rec-card {{ border-radius: 10px; }}
+            .rec-info {{ padding: 10px 12px 12px 12px; }}
+            .rec-title {{ font-size: 0.7rem; min-height: 2.2em; }}
+            .rec-channel {{ font-size: 0.6rem; }}
+            .rec-score {{ font-size: 0.6rem; }}
+            .synopsis-box {{ padding: 10px 14px; }}
+            .synopsis-text {{ font-size: 0.8rem; }}
+            .tags-container {{ gap: 4px; }}
+            .tag {{ font-size: 0.6rem; padding: 2px 10px; }}
+            .analytics-card {{ padding: 8px 10px; }}
+            .analytics-number {{ font-size: 1.1rem; }}
+            .analytics-label {{ font-size: 0.5rem; }}
+            .progress-container {{ padding: 10px 15px; margin: 10px auto; }}
+            .progress-label {{ font-size: 0.7rem; }}
+            .progress-percent {{ font-size: 0.65rem; }}
+            .stButton > button {{ padding: 0.4rem 0.8rem !important; font-size: 0.75rem !important; min-height: 38px !important; }}
+            .journey-thumbnail {{ width: 40px; height: 28px; }}
         }}
         
-        /* ===== FIX FOR WHITE FLASH ON LOAD ===== */
-        .stApp {{
-            background-color: #0a0a1a !important;
-            background: {colors["bg"]} !important;
-            min-height: 100vh !important;
+        @media (max-width: 480px) {{
+            .app-title h1 {{ font-size: 1.3rem !important; }}
+            .video-title-text {{ font-size: 0.85rem; }}
+            .video-channel {{ font-size: 0.65rem; }}
+            .rec-title {{ font-size: 0.65rem; min-height: 2em; }}
+            .stat-number {{ font-size: 0.8rem; }}
+            .stat-box {{ padding: 4px 6px; }}
+            .stButton > button {{ font-size: 0.65rem !important; padding: 0.3rem 0.6rem !important; min-height: 32px !important; }}
+            .filter-btn {{ font-size: 0.6rem; padding: 4px 8px; min-width: 40px; }}
         }}
         
-        /* ===== ENSURE TEXT IS VISIBLE ===== */
-        .stMarkdown, .stText, .stCaption, .stException {{
+        /* ===== RECOMMENDATIONS GRID ===== */
+        .rec-grid {{
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            padding: 0 4px;
+        }}
+        @media (max-width: 1024px) {{ .rec-grid {{ grid-template-columns: repeat(3, 1fr); gap: 12px; }} }}
+        @media (max-width: 768px) {{ .rec-grid {{ grid-template-columns: repeat(2, 1fr); gap: 8px; }} }}
+        @media (max-width: 480px) {{ .rec-grid {{ grid-template-columns: repeat(2, 1fr); gap: 6px; }} }}
+        
+        /* ===== SIDEBAR ===== */
+        .css-1d391kg {{ padding: 0.5rem 0.8rem !important; }}
+        
+        /* ===== SCROLLBAR ===== */
+        ::-webkit-scrollbar {{width: 6px;}}
+        ::-webkit-scrollbar-track {{background: #0a0a1a;}}
+        ::-webkit-scrollbar-thumb {{background: #f0c040; border-radius: 10px;}}
+        
+        /* ===== HIDE DEFAULT ELEMENTS ===== */
+        #MainMenu {{visibility: hidden;}}
+        footer {{visibility: hidden;}}
+        
+        /* ===== ENSURE ALL TEXT IS VISIBLE ===== */
+        .stMarkdown, .stText, .stCaption, .stException, p, label, div {{
             color: {colors["text"]} !important;
+        }}
+        
+        /* ===== BLACK TEXT ON DARK BACKGROUND - FIX ===== */
+        .stSelectbox label, .stMultiSelect label, .stTextInput label {{
+            color: #dddddd !important;
+        }}
+        
+        /* ===== DROPDOWN FIX ===== */
+        select, .stSelectbox div[data-baseweb="select"] {{
+            background-color: #1a1a2e !important;
+            color: #ffffff !important;
         }}
     </style>
     """, unsafe_allow_html=True)
+   
     
     # ============================================================
     # SIDEBAR
