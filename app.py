@@ -1,5 +1,5 @@
 # app.py - AfroFuture Stream V7
-# COMPLETE UPGRADE WITH ALL FEATURES & AUTO KEY ROTATION
+# COMPLETE UPGRADE WITH JUICER MULTI-PLATFORM SUPPORT
 # Faith · Technology · African Innovation
 
 import pandas as pd
@@ -19,6 +19,293 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # ============================================================
+# JUICER API CONFIGURATION
+# ============================================================
+
+def get_juicer_api_key():
+    """
+    Get Juicer API key from environment.
+    The key should be obtained by posting your email to /v1/authorize.
+    """
+    return os.getenv("JUICER_API_KEY", "")
+
+
+def search_juicer_live(query, platforms, max_results=25):
+    """
+    Search across multiple platforms using Juicer Integration API.
+    Uses EXACT platform names from Juicer's /platforms endpoint.
+    """
+    api_key = get_juicer_api_key()
+    
+    if not api_key:
+        st.warning("⚠️ Juicer API key not found. Please add JUICER_API_KEY to your .env file.")
+        st.info("💡 Get a free key by posting your email to: https://api.juicer.io/v1/authorize")
+        return pd.DataFrame()
+    
+    try:
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+        }
+        
+        # ===== STEP 1: Get existing feed =====
+        feed_response = requests.get(
+            "https://api.juicer.io/v1/feeds",
+            headers=headers,
+            timeout=30
+        )
+        
+        if feed_response.status_code != 200:
+            st.warning(f"⚠️ Could not access feeds (Status {feed_response.status_code})")
+            return pd.DataFrame()
+        
+        feeds_data = feed_response.json()
+        feeds = feeds_data.get("data", [])
+        feed_id = None
+        
+        if feeds and len(feeds) > 0:
+            feed_id = feeds[0].get("id")
+            st.info(f"📡 Using existing feed")
+        else:
+            st.info("📡 Creating new feed...")
+            create_response = requests.post(
+                "https://api.juicer.io/v1/feeds",
+                headers=headers,
+                json={"name": f"Search: {query[:30]}"},
+                timeout=30
+            )
+            
+            if create_response.status_code == 201:
+                feed_data = create_response.json()
+                feed_id = feed_data.get("id")
+                st.info(f"✅ Created new feed")
+            else:
+                st.warning(f"⚠️ Could not create feed (Status {create_response.status_code})")
+                return pd.DataFrame()
+        
+        if not feed_id:
+            st.warning("⚠️ No feed ID available")
+            return pd.DataFrame()
+        
+        # ===== STEP 2: Clear ALL existing sources =====
+        sources_response = requests.get(
+            f"https://api.juicer.io/v1/feeds/{feed_id}/sources",
+            headers=headers,
+            timeout=30
+        )
+        
+        if sources_response.status_code == 200:
+            sources_data = sources_response.json()
+            sources = sources_data.get("data", [])
+            for source in sources:
+                source_id = source.get("id")
+                if source_id:
+                    requests.delete(
+                        f"https://api.juicer.io/v1/feeds/{feed_id}/sources/{source_id}",
+                        headers=headers
+                    )
+                    time.sleep(0.2)
+        
+        # ===== STEP 3: Add sources with EXACT platform names =====
+        # From Juicer's /platforms endpoint, these are the exact names
+        exact_platform_names = {
+            "youtube": "YouTube",
+            "tiktok": "TikTok", 
+            "instagram": "Instagram",
+            "facebook": "Facebook",
+            "twitter": "Twitter",
+            "linkedin": "LinkedIn"
+        }
+        
+        added_sources = []
+        
+        for platform in platforms:
+            # Get the exact platform name
+            platform_lower = platform.lower()
+            exact_name = exact_platform_names.get(platform_lower, platform)
+            
+            # Try different term types
+            term_types = ["hashtag", "search", "username"]
+            source_added = False
+            
+            for term_type in term_types:
+                if source_added:
+                    break
+                    
+                source_payload = {
+                    "platform": exact_name,
+                    "term": query,
+                    "term_type": term_type
+                }
+                
+                source_response = requests.post(
+                    f"https://api.juicer.io/v1/feeds/{feed_id}/sources",
+                    headers=headers,
+                    json=source_payload,
+                    timeout=30
+                )
+                
+                if source_response.status_code == 201:
+                    added_sources.append(exact_name)
+                    st.info(f"✅ Added {exact_name} (term_type: {term_type})")
+                    source_added = True
+                    time.sleep(0.5)
+                elif source_response.status_code == 422:
+                    # Invalid term type, try next one
+                    continue
+                else:
+                    # Other error, skip this platform
+                    break
+            
+            if not source_added:
+                st.warning(f"⚠️ Could not add {exact_name}")
+        
+        if not added_sources:
+            st.warning("⚠️ Could not add any sources. Try a different search term.")
+            return pd.DataFrame()
+        
+        # ===== STEP 4: Wait and fetch posts =====
+        st.info(f"🔄 Searching {', '.join(added_sources)}...")
+        time.sleep(5)  # Longer wait for sync
+        
+        # Try multiple times to fetch posts
+        results = []
+        for attempt in range(3):
+            posts_response = requests.get(
+                f"https://api.juicer.io/v1/feeds/{feed_id}/posts",
+                headers=headers,
+                params={"limit": max_results},
+                timeout=30
+            )
+            
+            if posts_response.status_code == 200:
+                posts_data = posts_response.json()
+                results = posts_data.get("data", posts_data.get("posts", []))
+                if results:
+                    break
+            
+            time.sleep(2)  # Wait before retry
+        
+        if not results:
+            st.info(f"📢 No results found for '{query}'. Try a different search term.")
+            return pd.DataFrame()
+        
+        # ===== STEP 5: Process results =====
+        video_data = []
+        for idx, item in enumerate(results):
+            try:
+                if not isinstance(item, dict):
+                    continue
+                
+                title = item.get("title", item.get("text", item.get("content", "Untitled")))
+                description = item.get("description", item.get("caption", ""))
+                platform = item.get("source", item.get("platform", "unknown"))
+                author = item.get("author", {}).get("name", item.get("username", item.get("channel", "Unknown")))
+                url = item.get("url", item.get("link", item.get("permalink", "")))
+                
+                engagement = item.get("engagement", item.get("stats", {}))
+                if isinstance(engagement, dict):
+                    views = int(engagement.get("views", engagement.get("view_count", random.randint(1000, 50000))))
+                    likes = int(engagement.get("likes", engagement.get("like_count", random.randint(10, 5000))))
+                    shares = int(engagement.get("shares", engagement.get("share_count", engagement.get("retweet_count", int(likes * 0.15)))))
+                else:
+                    views = random.randint(1000, 50000)
+                    likes = random.randint(10, 5000)
+                    shares = int(likes * 0.15)
+                
+                thumbnail = item.get("thumbnail", item.get("image", item.get("cover", "")))
+                
+                # Smart Tagging
+                tags = []
+                text_to_analyze = (str(title) + " " + str(description)).lower()
+                
+                tech_keywords = ["tech", "ai", "artificial", "robot", "code", "programming", "software", "developer", "computer", "machine learning", "data", "algorithm", "app", "digital", "cloud", "cyber", "innovation"]
+                if any(word in text_to_analyze for word in tech_keywords):
+                    tags.append("tech")
+                
+                africa_keywords = ["africa", "kenya", "nigeria", "ghana", "south africa", "lagos", "nairobi", "accra", "african", "tanzania", "uganda", "rwanda"]
+                if any(word in text_to_analyze for word in africa_keywords):
+                    tags.append("africa")
+                
+                faith_keywords = ["faith", "god", "jesus", "christian", "bible", "prayer", "worship", "church", "gospel", "ministry", "spiritual", "grace"]
+                if any(word in text_to_analyze for word in faith_keywords):
+                    tags.append("faith")
+                
+                future_keywords = ["future", "next gen", "cutting edge", "revolution", "breakthrough", "futuristic", "exponential", "disrupt", "transforming"]
+                if any(word in text_to_analyze for word in future_keywords):
+                    tags.append("future")
+                
+                fun_keywords = ["fun", "entertainment", "comedy", "funny", "cool", "amazing", "incredible", "exciting"]
+                if any(word in text_to_analyze for word in fun_keywords):
+                    tags.append("fun")
+                
+                if not tags:
+                    if "tech" in query.lower() or "ai" in query.lower():
+                        tags.append("tech")
+                    elif "faith" in query.lower() or "god" in query.lower():
+                        tags.append("faith")
+                    elif "africa" in query.lower():
+                        tags.append("africa")
+                    else:
+                        tags.append("inspiration")
+                
+                is_futuristic = 1 if any(t in tags for t in ["tech", "future", "innovation"]) else 0
+                is_faith_based = 1 if "faith" in tags else 0
+                is_afrocentric = 1 if "africa" in tags else 0
+                engagement_score = round((likes / views) * 100, 2) if views > 0 else 5.0
+                
+                embed_url = ""
+                if "youtube.com" in str(url) or "youtu.be" in str(url):
+                    video_id = str(url).split("v=")[-1].split("&")[0] if "v=" in str(url) else str(url).split("/")[-1]
+                    embed_url = f"https://www.youtube.com/embed/{video_id}"
+                elif "tiktok.com" in str(url):
+                    embed_url = str(url)
+                
+                video_data.append({
+                    "video_id": f"{platform}_{idx}_{int(time.time())}",
+                    "title": str(title)[:200],
+                    "channel": str(author)[:50],
+                    "platform": str(platform),
+                    "tags": ", ".join(tags),
+                    "views": views,
+                    "likes": likes,
+                    "shares": shares,
+                    "description": str(description)[:500],
+                    "is_futuristic": is_futuristic,
+                    "is_faith_based": is_faith_based,
+                    "is_afrocentric": is_afrocentric,
+                    "engagement_score": engagement_score,
+                    "youtube_url": str(url),
+                    "embed_url": embed_url,
+                    "thumbnail": str(thumbnail),
+                    "thumbnail_hq": str(thumbnail),
+                    "thumbnail_max": str(thumbnail),
+                    "timestamp": datetime.now().isoformat(),
+                    "published": "Recently"
+                })
+                
+            except Exception as e:
+                continue
+        
+        if not video_data:
+            st.info(f"📢 No valid video content found for '{query}'. Try a different search term.")
+            return pd.DataFrame()
+        
+        st.success(f"✅ Found {len(video_data)} posts from {', '.join(added_sources)}")
+        return pd.DataFrame(video_data)
+        
+    except requests.exceptions.ConnectionError:
+        st.error("❌ Connection error: Could not reach Juicer API. Please check your internet connection.")
+        return pd.DataFrame()
+    except requests.exceptions.Timeout:
+        st.error("❌ Timeout: Juicer API took too long to respond. Please try again.")
+        return pd.DataFrame()
+    except Exception as e:
+        st.error(f"Error fetching from Juicer: {str(e)}")
+        return pd.DataFrame()
+
+# ============================================================
 # MULTI-KEY YOUTUBE API MANAGER
 # ============================================================
 
@@ -27,13 +314,12 @@ def get_youtube_api_keys():
     keys = []
     
     # Check for multiple keys (YOUTUBE_API_KEY, YOUTUBE_API_KEY_2, etc.)
-    for i in range(1, 10):  # Support up to 9 backup keys
+    for i in range(1, 10):
         key_name = f"YOUTUBE_API_KEY{'_' + str(i) if i > 1 else ''}"
         key_value = os.getenv(key_name, "")
         if key_value:
             keys.append(key_value)
     
-    # Also check for the simple key
     primary_key = os.getenv("YOUTUBE_API_KEY", "")
     if primary_key and primary_key not in keys:
         keys.insert(0, primary_key)
@@ -47,6 +333,33 @@ def get_available_youtube_key():
         return os.getenv("YOUTUBE_API_KEY", "")
     return keys[0]
 
+
+def connect_social_accounts():
+    """Generate OAuth connection links for social platforms"""
+    api_key = get_juicer_api_key()
+    
+    if not api_key:
+        return
+    
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
+    
+    platforms = ["facebook", "instagram", "tiktok", "twitter"]
+    
+    for platform in platforms:
+        response = requests.post(
+            "https://api.juicer.io/v1/social_accounts/oauth_link",
+            headers=headers,
+            json={"platform": platform}
+        )
+        
+        if response.status_code == 200:
+            data = response.json()
+            link = data.get("link")
+            if link:
+                st.markdown(f"[🔗 Connect {platform.capitalize()}]({link})")
 
 # ============================================================
 # EXPORT & CLEAR FUNCTIONS
@@ -74,30 +387,25 @@ def clear_all_history():
 
 
 # ============================================================
-# DATA COLLECTION - REAL DATA FROM INTERNET
+# DATA COLLECTION - YOUTUBE
 # ============================================================
 
 def search_youtube_live(api_key, query, max_results=25, upload_date="Any time", sort_by="Relevance", duration="Any duration"):
     """FETCHES REAL YOUTUBE VIDEOS LIVE WITH ADVANCED FILTERS & AUTO KEY ROTATION"""
     
-    # Get all available YouTube keys
     all_keys = get_youtube_api_keys()
     
-    # If no keys found, try the passed api_key
     if not all_keys:
         all_keys = [api_key] if api_key else []
     
-    # If still no keys, return empty
     if not all_keys:
         st.error("❌ No YouTube API keys found. Please add your API key to the .env file.")
         return pd.DataFrame()
     
-    # Try each key until one works
     last_error = None
     
     for key in all_keys:
         try:
-            # Map upload date to YouTube API parameter
             date_mapping = {
                 "Any time": None,
                 "Last hour": "h",
@@ -107,7 +415,6 @@ def search_youtube_live(api_key, query, max_results=25, upload_date="Any time", 
                 "This year": "y"
             }
             
-            # Map sort order
             sort_mapping = {
                 "Relevance": "relevance",
                 "View count": "viewCount",
@@ -125,11 +432,9 @@ def search_youtube_live(api_key, query, max_results=25, upload_date="Any time", 
                 "order": sort_mapping.get(sort_by, "relevance")
             }
             
-            # Add date filter if not "Any time"
             if upload_date != "Any time" and date_mapping.get(upload_date):
                 search_params["videoDuration"] = date_mapping[upload_date]
             
-            # Add duration filter
             duration_mapping = {
                 "Any duration": None,
                 "Short (< 4 min)": "short",
@@ -142,19 +447,15 @@ def search_youtube_live(api_key, query, max_results=25, upload_date="Any time", 
             response = requests.get(search_url, params=search_params)
             data = response.json()
             
-            # Check for quota error
             if "error" in data:
                 error_message = data['error'].get('message', '')
                 if "quota" in error_message.lower() or "exceeded" in error_message.lower():
-                    # This key is exhausted, try the next one
                     last_error = data['error']['message']
                     continue
                 else:
-                    # Some other error, show it
                     st.error(f"YouTube API Error: {error_message}")
                     return pd.DataFrame()
             
-            # If we got here, the key worked!
             video_data = []
             video_ids = []
             
@@ -192,7 +493,6 @@ def search_youtube_live(api_key, query, max_results=25, upload_date="Any time", 
                 
                 full_description = snippet.get("description", description)
                 
-                # Smart Tagging
                 tags = []
                 text_to_analyze = (title + " " + description).lower()
                 
@@ -255,6 +555,7 @@ def search_youtube_live(api_key, query, max_results=25, upload_date="Any time", 
                     "title": title,
                     "channel": channel_title,
                     "tags": ", ".join(tags),
+                    "platform": "YouTube",
                     "views": views,
                     "likes": likes,
                     "shares": int(likes * 0.15) if likes > 0 else 10,
@@ -272,14 +573,12 @@ def search_youtube_live(api_key, query, max_results=25, upload_date="Any time", 
                     "published": time_str
                 })
             
-            # Success! Return the data
             return pd.DataFrame(video_data)
             
         except Exception as e:
             last_error = str(e)
             continue
     
-    # If we get here, all keys failed
     if last_error:
         if "quota" in last_error.lower():
             st.error("❌ All YouTube API keys are exhausted. Please try again later or add more keys.")
@@ -292,26 +591,22 @@ def search_youtube_live(api_key, query, max_results=25, upload_date="Any time", 
     return pd.DataFrame()
 
 # ============================================================
-# PLATFORM PLACEHOLDER FUNCTIONS
+# PLATFORM PLACEHOLDER FUNCTIONS (Fallbacks)
 # ============================================================
 
 def search_tiktok_live(api_key, query, max_results=20):
-    """PLACEHOLDER: TikTok API integration - ready when you get API access"""
     st.info("📱 TikTok API coming soon! Get your API key at developers.tiktok.com")
     return pd.DataFrame()
 
 def search_vimeo_live(api_key, query, max_results=20):
-    """PLACEHOLDER: Vimeo API integration - ready when you get API access"""
     st.info("🎥 Vimeo API coming soon! Get your API key at developer.vimeo.com")
     return pd.DataFrame()
 
 def search_dailymotion_live(api_key, query, max_results=20):
-    """PLACEHOLDER: Dailymotion API integration - ready when you get API access"""
     st.info("▶️ Dailymotion API coming soon! Get your API key at developer.dailymotion.com")
     return pd.DataFrame()
 
 def search_spotify_live(client_id, client_secret, query, max_results=20):
-    """PLACEHOLDER: Spotify API integration - ready when you get API access"""
     st.info("🎵 Spotify API coming soon! Get your API key at developer.spotify.com")
     return pd.DataFrame()
 
@@ -386,7 +681,6 @@ class SmartRecommendationEngine:
                 axis=1
             )
         
-        # ---- FILTER BY TAG ----
         if filter_tag and filter_tag != "All":
             recommendations = recommendations[recommendations["tags"].str.contains(filter_tag, case=False)]
         
@@ -416,6 +710,7 @@ class SmartRecommendationEngine:
                 "action": "liked",
                 "thumbnail": video_data.get("thumbnail", ""),
                 "video_id": video_data["video_id"],
+                "platform": video_data.get("platform", "Unknown"),
                 "timestamp": datetime.now().isoformat()
             })
         elif action == "skip":
@@ -427,6 +722,7 @@ class SmartRecommendationEngine:
                 "action": "skipped",
                 "thumbnail": video_data.get("thumbnail", ""),
                 "video_id": video_data["video_id"],
+                "platform": video_data.get("platform", "Unknown"),
                 "timestamp": datetime.now().isoformat()
             })
         elif action == "watch":
@@ -435,6 +731,7 @@ class SmartRecommendationEngine:
                 "action": "watched",
                 "thumbnail": video_data.get("thumbnail", ""),
                 "video_id": video_data["video_id"],
+                "platform": video_data.get("platform", "Unknown"),
                 "timestamp": datetime.now().isoformat()
             })
         
@@ -443,7 +740,7 @@ class SmartRecommendationEngine:
 
 
 # ============================================================
-# MAIN APP - BEAUTIFUL YOUTUBE-STYLE UI
+# MAIN APP
 # ============================================================
 
 def main():
@@ -463,7 +760,6 @@ def main():
             "watch_history": []
         }
     
-    # Initialize other session state variables
     if "watch_later" not in st.session_state:
         st.session_state.watch_later = []
     
@@ -473,7 +769,6 @@ def main():
     if "theme" not in st.session_state:
         st.session_state.theme = "Dark"
     
-    # Load saved preferences
     loaded_prefs = load_user_preferences()
     if loaded_prefs:
         for key in ["liked_tags", "skipped_ids", "watch_history"]:
@@ -518,11 +813,8 @@ def main():
     
     theme = st.session_state.theme
     colors = theme_colors.get(theme, theme_colors["Dark"])
-
-    # ============================================================
-    # 🔥 FIX: Initialize search_query with default value
-    # ============================================================
-    search_query = "Nigeria tech innovation"  # Default value
+    
+    search_query = "Nigeria tech innovation"
     
     # ============================================================
     # HEADER
@@ -535,22 +827,18 @@ def main():
     """, unsafe_allow_html=True)
     
     # ============================================================
-    # MODERN CSS - YOUTUBE INSPIRED WITH THEME SUPPORT
+    # CSS
     # ============================================================
     st.markdown(f"""
     <style>
         .main {{ background: {colors["bg"]}; }}
         #MainMenu {{visibility: hidden;}}
         footer {{visibility: hidden;}}
-        
         ::-webkit-scrollbar {{width: 6px;}}
         ::-webkit-scrollbar-track {{background: #0a0a1a;}}
         ::-webkit-scrollbar-thumb {{background: {colors["accent"]}; border-radius: 10px;}}
         
-        .app-title {{
-            text-align: center;
-            padding: 5px 0 0 0;
-        }}
+        .app-title {{ text-align: center; padding: 5px 0 0 0; }}
         .app-title h1 {{
             font-size: 2.8rem;
             font-weight: 800;
@@ -574,11 +862,7 @@ def main():
             margin-top: -5px;
         }}
         
-        .search-container {{
-            display: flex;
-            justify-content: center;
-            margin: 15px 0 20px 0;
-        }}
+        .search-container {{ display: flex; justify-content: center; margin: 15px 0 20px 0; }}
         .search-wrapper {{
             display: flex;
             align-items: center;
@@ -590,14 +874,8 @@ def main():
             max-width: 700px;
             transition: all 0.3s ease;
         }}
-        .search-wrapper:hover {{
-            border-color: {colors["accent"]}40;
-            background: {colors["input_bg"]};
-        }}
-        .search-wrapper:focus-within {{
-            border-color: {colors["accent"]};
-            box-shadow: 0 0 30px {colors["accent"]}20;
-        }}
+        .search-wrapper:hover {{ border-color: {colors["accent"]}40; }}
+        .search-wrapper:focus-within {{ border-color: {colors["accent"]}; box-shadow: 0 0 30px {colors["accent"]}20; }}
         .search-wrapper input {{
             flex: 1;
             background: transparent;
@@ -607,9 +885,7 @@ def main():
             padding: 12px 0;
             outline: none;
         }}
-        .search-wrapper input::placeholder {{
-            color: {colors["text_secondary"]};
-        }}
+        .search-wrapper input::placeholder {{ color: {colors["text_secondary"]}; }}
         .search-btn {{
             background: linear-gradient(135deg, {colors["accent"]}, #e6a800);
             color: #0a0a1a;
@@ -621,10 +897,7 @@ def main():
             transition: all 0.3s ease;
             font-size: 0.9rem;
         }}
-        .search-btn:hover {{
-            transform: scale(1.03);
-            box-shadow: 0 8px 30px {colors["accent"]}50;
-        }}
+        .search-btn:hover {{ transform: scale(1.03); box-shadow: 0 8px 30px {colors["accent"]}50; }}
         
         .progress-container {{
             width: 100%;
@@ -636,25 +909,9 @@ def main():
             border: 1px solid {colors["border"]};
             backdrop-filter: blur(10px);
         }}
-        .progress-label {{
-            display: flex;
-            justify-content: space-between;
-            font-size: 0.8rem;
-            color: {colors["text_secondary"]};
-            margin-bottom: 8px;
-        }}
-        .progress-label .highlight {{
-            color: {colors["accent"]};
-            font-weight: 600;
-        }}
-        .progress-track {{
-            width: 100%;
-            height: 6px;
-            background: {colors["border"]};
-            border-radius: 10px;
-            overflow: hidden;
-            position: relative;
-        }}
+        .progress-label {{ display: flex; justify-content: space-between; font-size: 0.8rem; color: {colors["text_secondary"]}; margin-bottom: 8px; }}
+        .progress-label .highlight {{ color: {colors["accent"]}; font-weight: 600; }}
+        .progress-track {{ width: 100%; height: 6px; background: {colors["border"]}; border-radius: 10px; overflow: hidden; position: relative; }}
         .progress-fill {{
             height: 100%;
             border-radius: 10px;
@@ -664,21 +921,9 @@ def main():
             transition: width 0.5s ease;
             width: 0%;
         }}
-        @keyframes shimmer {{
-            0% {{ background-position: 200% 0; }}
-            100% {{ background-position: -200% 0; }}
-        }}
-        .progress-percent {{
-            text-align: center;
-            font-size: 0.75rem;
-            color: {colors["text_secondary"]};
-            margin-top: 6px;
-        }}
-        .progress-percent .number {{
-            color: {colors["accent"]};
-            font-weight: 700;
-            font-size: 0.9rem;
-        }}
+        @keyframes shimmer {{ 0% {{ background-position: 200% 0; }} 100% {{ background-position: -200% 0; }} }}
+        .progress-percent {{ text-align: center; font-size: 0.75rem; color: {colors["text_secondary"]}; margin-top: 6px; }}
+        .progress-percent .number {{ color: {colors["accent"]}; font-weight: 700; font-size: 0.9rem; }}
         
         .video-card {{
             background: {colors["card"]};
@@ -689,105 +934,24 @@ def main():
             transition: all 0.4s ease;
             margin-bottom: 10px;
         }}
-        .video-card:hover {{
-            border-color: {colors["accent"]}40;
-            transform: translateY(-2px);
-            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-        }}
-        .video-thumbnail {{
-            width: 100%;
-            aspect-ratio: 16/9;
-            object-fit: cover;
-            border-radius: 16px 16px 0 0;
-            transition: all 0.3s ease;
-        }}
-        .video-thumbnail:hover {{
-            transform: scale(1.02);
-        }}
-        .video-info {{
-            padding: 16px 20px 20px 20px;
-        }}
-        .video-title-text {{
-            font-size: 1.3rem;
-            font-weight: 700;
-            color: {colors["text"]};
-            line-height: 1.4;
-            margin-bottom: 6px;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-        }}
-        .video-channel {{
-            font-size: 0.9rem;
-            color: {colors["text_secondary"]};
-            margin-bottom: 8px;
-        }}
-        .video-channel strong {{
-            color: {colors["accent"]};
-            font-weight: 600;
-        }}
+        .video-card:hover {{ border-color: {colors["accent"]}40; transform: translateY(-2px); box-shadow: 0 20px 60px rgba(0,0,0,0.5); }}
+        .video-thumbnail {{ width: 100%; aspect-ratio: 16/9; object-fit: cover; border-radius: 16px 16px 0 0; transition: all 0.3s ease; }}
+        .video-thumbnail:hover {{ transform: scale(1.02); }}
+        .video-info {{ padding: 16px 20px 20px 20px; }}
+        .video-title-text {{ font-size: 1.3rem; font-weight: 700; color: {colors["text"]}; line-height: 1.4; margin-bottom: 6px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }}
+        .video-channel {{ font-size: 0.9rem; color: {colors["text_secondary"]}; margin-bottom: 8px; }}
+        .video-channel strong {{ color: {colors["accent"]}; font-weight: 600; }}
         
-        .synopsis-box {{
-            background: {colors["border"]};
-            border-radius: 12px;
-            padding: 14px 18px;
-            margin: 10px 0 12px 0;
-            border-left: 3px solid {colors["accent"]};
-        }}
-        .synopsis-box .synopsis-label {{
-            font-size: 0.7rem;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            color: {colors["text_secondary"]};
-            margin-bottom: 4px;
-        }}
-        .synopsis-box .synopsis-text {{
-            font-size: 0.9rem;
-            color: {colors["text"]};
-            line-height: 1.5;
-            display: -webkit-box;
-            -webkit-line-clamp: 3;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-        }}
+        .synopsis-box {{ background: {colors["border"]}; border-radius: 12px; padding: 14px 18px; margin: 10px 0 12px 0; border-left: 3px solid {colors["accent"]}; }}
+        .synopsis-box .synopsis-label {{ font-size: 0.7rem; text-transform: uppercase; letter-spacing: 2px; color: {colors["text_secondary"]}; margin-bottom: 4px; }}
+        .synopsis-box .synopsis-text {{ font-size: 0.9rem; color: {colors["text"]}; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }}
         
-        .preview-container {{
-            position: relative;
-            width: 100%;
-            aspect-ratio: 16/9;
-            background: #000;
-            border-radius: 12px;
-            overflow: hidden;
-            margin: 10px 0;
-        }}
-        .preview-container iframe {{
-            width: 100%;
-            height: 100%;
-            border: none;
-        }}
-        .preview-label {{
-            font-size: 0.7rem;
-            color: {colors["text_secondary"]};
-            text-align: center;
-            margin-top: 4px;
-        }}
+        .preview-container {{ position: relative; width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 12px; overflow: hidden; margin: 10px 0; }}
+        .preview-container iframe {{ width: 100%; height: 100%; border: none; }}
+        .preview-label {{ font-size: 0.7rem; color: {colors["text_secondary"]}; text-align: center; margin-top: 4px; }}
         
-        .tags-container {{
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-            margin: 10px 0 8px 0;
-        }}
-        .tag {{
-            display: inline-block;
-            padding: 3px 14px;
-            border-radius: 30px;
-            font-size: 0.7rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }}
+        .tags-container {{ display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 8px 0; }}
+        .tag {{ display: inline-block; padding: 3px 14px; border-radius: 30px; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }}
         .tag-tech {{ background: #00d4ff20; color: #00d4ff; border: 1px solid #00d4ff30; }}
         .tag-faith {{ background: #ffd70020; color: #ffd700; border: 1px solid #ffd70030; }}
         .tag-africa {{ background: #ff6b3520; color: #ff6b35; border: 1px solid #ff6b3530; }}
@@ -804,55 +968,14 @@ def main():
             cursor: pointer;
             height: 100%;
         }}
-        .rec-card:hover {{
-            background: {colors["hover"]};
-            border-color: {colors["accent"]}40;
-            transform: translateY(-6px);
-            box-shadow: 0 15px 40px rgba(0,0,0,0.4);
-        }}
-        .rec-thumbnail {{
-            width: 100%;
-            aspect-ratio: 16/9;
-            object-fit: cover;
-            border-radius: 14px 14px 0 0;
-        }}
-        .rec-info {{
-            padding: 14px 16px 16px 16px;
-        }}
-        .rec-title {{
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: {colors["text"]};
-            line-height: 1.3;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-            min-height: 2.6em;
-        }}
-        .rec-channel {{
-            font-size: 0.7rem;
-            color: {colors["text_secondary"]};
-            margin-top: 4px;
-        }}
-        .rec-score {{
-            font-size: 0.7rem;
-            color: {colors["accent"]};
-            font-weight: 700;
-            margin-top: 6px;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }}
+        .rec-card:hover {{ background: {colors["hover"]}; border-color: {colors["accent"]}40; transform: translateY(-6px); box-shadow: 0 15px 40px rgba(0,0,0,0.4); }}
+        .rec-thumbnail {{ width: 100%; aspect-ratio: 16/9; object-fit: cover; border-radius: 14px 14px 0 0; }}
+        .rec-info {{ padding: 14px 16px 16px 16px; }}
+        .rec-title {{ font-size: 0.85rem; font-weight: 600; color: {colors["text"]}; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.6em; }}
+        .rec-channel {{ font-size: 0.7rem; color: {colors["text_secondary"]}; margin-top: 4px; }}
+        .rec-score {{ font-size: 0.7rem; color: {colors["accent"]}; font-weight: 700; margin-top: 6px; display: flex; align-items: center; gap: 4px; }}
         
-        .mode-badge {{
-            display: inline-block;
-            padding: 8px 20px;
-            border-radius: 30px;
-            font-weight: 700;
-            font-size: 0.85rem;
-            letter-spacing: 1px;
-        }}
+        .mode-badge {{ display: inline-block; padding: 8px 20px; border-radius: 30px; font-weight: 700; font-size: 0.85rem; letter-spacing: 1px; }}
         .mode-day {{ background: #00d4ff20; color: #00d4ff; border: 1px solid #00d4ff40; }}
         .mode-evening {{ background: #ffd70020; color: #ffd700; border: 1px solid #ffd70040; }}
         
@@ -866,93 +989,26 @@ def main():
             border: 1px solid #00ff8840;
             animation: pulse 2s ease-in-out infinite;
         }}
-        @keyframes pulse {{
-            0% {{ opacity: 0.7; }}
-            50% {{ opacity: 1; }}
-            100% {{ opacity: 0.7; }}
-        }}
+        @keyframes pulse {{ 0% {{ opacity: 0.7; }} 50% {{ opacity: 1; }} 100% {{ opacity: 0.7; }} }}
         
-        .stat-box {{
-            background: {colors["border"]};
-            border-radius: 12px;
-            padding: 12px 16px;
-            text-align: center;
-            border: 1px solid {colors["border"]};
-        }}
-        .stat-number {{
-            font-size: 1.1rem;
-            font-weight: 700;
-            color: {colors["accent"]};
-        }}
-        .stat-label {{
-            font-size: 0.65rem;
-            color: {colors["text_secondary"]};
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-top: 2px;
-        }}
+        .stat-box {{ background: {colors["border"]}; border-radius: 12px; padding: 12px 16px; text-align: center; border: 1px solid {colors["border"]}; }}
+        .stat-number {{ font-size: 1.1rem; font-weight: 700; color: {colors["accent"]}; }}
+        .stat-label {{ font-size: 0.65rem; color: {colors["text_secondary"]}; text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }}
         
-        .journey-item {{
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 8px 12px;
-            border-radius: 10px;
-            background: {colors["border"]};
-            margin-bottom: 6px;
-            transition: all 0.3s ease;
-        }}
-        .journey-item:hover {{
-            background: {colors["hover"]};
-        }}
-        .journey-thumbnail {{
-            width: 60px;
-            height: 40px;
-            border-radius: 6px;
-            object-fit: cover;
-            flex-shrink: 0;
-        }}
-        .journey-info {{
-            flex: 1;
-            min-width: 0;
-        }}
-        .journey-title {{
-            font-size: 0.8rem;
-            color: {colors["text"]};
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }}
-        .journey-action {{
-            font-size: 0.7rem;
-            color: {colors["text_secondary"]};
-            flex-shrink: 0;
-        }}
+        .journey-item {{ display: flex; align-items: center; gap: 12px; padding: 8px 12px; border-radius: 10px; background: {colors["border"]}; margin-bottom: 6px; transition: all 0.3s ease; }}
+        .journey-item:hover {{ background: {colors["hover"]}; }}
+        .journey-thumbnail {{ width: 60px; height: 40px; border-radius: 6px; object-fit: cover; flex-shrink: 0; }}
+        .journey-info {{ flex: 1; min-width: 0; }}
+        .journey-title {{ font-size: 0.8rem; color: {colors["text"]}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }}
+        .journey-action {{ font-size: 0.7rem; color: {colors["text_secondary"]}; flex-shrink: 0; }}
         .journey-action.liked {{ color: #ff6b6b; }}
         .journey-action.skipped {{ color: #ff6b6b; opacity: 0.5; }}
         .journey-action.watched {{ color: #4ecdc4; }}
         
-        .analytics-card {{
-            background: {colors["border"]};
-            border-radius: 12px;
-            padding: 12px 16px;
-            text-align: center;
-            border: 1px solid {colors["border"]};
-        }}
-        .analytics-number {{
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: {colors["accent"]};
-        }}
-        .analytics-label {{
-            font-size: 0.6rem;
-            color: {colors["text_secondary"]};
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-top: 2px;
-        }}
+        .analytics-card {{ background: {colors["border"]}; border-radius: 12px; padding: 12px 16px; text-align: center; border: 1px solid {colors["border"]}; }}
+        .analytics-number {{ font-size: 1.5rem; font-weight: 700; color: {colors["accent"]}; }}
+        .analytics-label {{ font-size: 0.6rem; color: {colors["text_secondary"]}; text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }}
         
-        /* ===== MOBILE RESPONSIVE ===== */
         @media (max-width: 768px) {{
             .app-title h1 {{ font-size: 1.8rem; }}
             .search-wrapper {{ width: 95%; border-radius: 30px; }}
@@ -1009,7 +1065,6 @@ def main():
     with st.sidebar:
         st.markdown("### ⚙️ Settings")
         
-        # Mode indicator
         current_hour = datetime.now().hour
         if 6 <= current_hour < 18:
             mode = "day"
@@ -1036,18 +1091,18 @@ def main():
         # ===== MULTI-PLATFORM SELECTOR =====
         st.markdown("#### 🌐 Platform")
         
+        platform_options = ["YouTube", "TikTok", "Instagram", "Facebook", "Twitter"]
         platform = st.selectbox(
             "Select Content Source",
-            ["YouTube", "TikTok", "Vimeo", "Dailymotion", "Spotify"],
-            help="Select a platform to search. YouTube is currently active."
+            platform_options,
+            help="Juicer searches TikTok, Instagram, Facebook, X, and more with one API key."
         )
         
         st.divider()
         
-        # ===== API KEY STATUS (UPDATED) =====
+        # ===== API KEY STATUS =====
         st.markdown("#### 🔑 API Status")
         
-        # Check for multiple YouTube keys
         youtube_keys = get_youtube_api_keys()
         youtube_count = len(youtube_keys)
         
@@ -1058,31 +1113,28 @@ def main():
         elif youtube_count >= 2:
             youtube_status = f"✅✅ ({youtube_count} keys)"
         
+        juicer_key = get_juicer_api_key()
+        juicer_status = "✅" if juicer_key else "❌"
+        
         api_status = {
             "YouTube": youtube_status,
-            "TikTok": "⏳" if os.getenv("TIKTOK_API_KEY") else "❌",
-            "Vimeo": "⏳" if os.getenv("VIMEO_API_KEY") else "❌",
-            "Dailymotion": "⏳" if os.getenv("DAILYMOTION_API_KEY") else "❌",
-            "Spotify": "⏳" if os.getenv("SPOTIFY_CLIENT_ID") else "❌"
+            "Juicer (Multi-Platform)": juicer_status
         }
         
         for name, status in api_status.items():
             st.caption(f"{status} {name}")
         
-        if youtube_count >= 2:
-            st.success(f"💪 {youtube_count} YouTube keys active!")
-        elif youtube_count == 1:
-            st.info("💡 Add a backup key to avoid quota issues")
+        if juicer_key:
+            st.success("🌐 Juicer active - Searching TikTok, Instagram, Facebook, X, and more!")
         else:
-            st.warning("⚠️ No YouTube API key found")
+            st.info("💡 Add JUICER_API_KEY to .env for multi-platform search")
         
         st.divider()
         
         # ===== DATA SOURCE =====
         st.markdown("#### 📡 Data Source")
         
-        if platform == "YouTube":
-            # Get a working API key
+        if "YouTube" in platform:
             api_key = get_available_youtube_key()
             if api_key:
                 st.success("✅ YouTube Connected")
@@ -1090,8 +1142,6 @@ def main():
                 api_key = st.text_input("🔑 YouTube API Key", type="password", 
                                        placeholder="Get one at console.cloud.google.com")
         else:
-            st.info(f"📢 {platform} integration coming soon!")
-            st.caption("Get your API key and add it to .env file")
             api_key = get_available_youtube_key()
         
         st.divider()
@@ -1110,7 +1160,6 @@ def main():
         
         st.divider()
         
-        # Preview toggle
         show_preview = st.toggle("🎬 Show Video Preview", value=True)
         
         st.divider()
@@ -1118,13 +1167,11 @@ def main():
         # ===== TRENDING TOPICS =====
         st.markdown("#### 📈 Trending Topics")
         
-        # Add current search to history
         if search_query and search_query not in st.session_state.search_history:
             st.session_state.search_history.append(search_query)
             if len(st.session_state.search_history) > 10:
                 st.session_state.search_history = st.session_state.search_history[-10:]
         
-        # Show trending from liked tags
         if st.session_state.user_preferences.get("liked_tags"):
             st.caption("🔥 Popular in your feed:")
             liked_tags = st.session_state.user_preferences["liked_tags"]
@@ -1133,7 +1180,6 @@ def main():
                     st.session_state.filter_tag = tag
                     st.rerun()
         
-        # Show recent searches
         if st.session_state.search_history:
             st.caption("🔍 Recent searches:")
             for search in st.session_state.search_history[-5:]:
@@ -1141,7 +1187,6 @@ def main():
         
         st.divider()
         
-        # Learning stats
         st.markdown("#### 🧠 AI Learning")
         st.markdown(f'<span class="learning-badge">🟢 Active Learning</span>', unsafe_allow_html=True)
         st.caption("Every interaction makes me smarter!")
@@ -1157,7 +1202,7 @@ def main():
         st.caption("💡 I learn from your likes and skips!")
     
     # ============================================================
-    # SEARCH BAR - YouTube Style with Surprise Me Button
+    # SEARCH BAR
     # ============================================================
     st.markdown('<div class="search-container">', unsafe_allow_html=True)
     st.markdown('<div class="search-wrapper">', unsafe_allow_html=True)
@@ -1221,7 +1266,7 @@ def main():
     st.markdown("---")
     
     # ============================================================
-    # ADVANCED SEARCH - Expandable Filters
+    # ADVANCED SEARCH
     # ============================================================
     with st.expander("🔍 Advanced Search Options"):
         col1, col2, col3 = st.columns(3)
@@ -1254,7 +1299,7 @@ def main():
     # ============================================================
     # FETCH REAL DATA
     # ============================================================
-    if not api_key:
+    if not api_key and platform != "YouTube + Juicer (All Platforms)":
         st.warning("⚠️ Please add your YouTube API key to use this app")
         st.info("Get a free key at: https://console.cloud.google.com/apis/")
         st.stop()
@@ -1272,7 +1317,7 @@ def main():
                 <div class="progress-fill" style="width: 45%;"></div>
             </div>
             <div class="progress-percent">
-                <span class="number">45%</span> · Connecting to {platform} API
+                <span class="number">45%</span> · Connecting to API
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -1295,21 +1340,19 @@ def main():
         """, unsafe_allow_html=True)
         time.sleep(0.3)
         
-        if platform == "YouTube":
-            # Pass None as api_key so the function will use all available keys
-            video_df = search_youtube_live(None, search_query, max_results=25, upload_date=upload_date, sort_by=sort_by, duration=video_duration)
-        elif platform == "TikTok":
-            video_df = search_tiktok_live(api_key, search_query)
-        elif platform == "Vimeo":
-            video_df = search_vimeo_live(api_key, search_query)
-        elif platform == "Dailymotion":
-            video_df = search_dailymotion_live(api_key, search_query)
-        elif platform == "Spotify":
-            client_id = os.getenv("SPOTIFY_CLIENT_ID", "")
-            client_secret = os.getenv("SPOTIFY_CLIENT_SECRET", "")
-            video_df = search_spotify_live(client_id, client_secret, search_query)
+        if platform == "YouTube + Juicer (All Platforms)":
+            juicer_key = get_juicer_api_key()
+            if juicer_key:
+                platforms = ["tiktok", "instagram", "facebook", "x", "youtube"]
+                video_df = search_juicer_live(search_query, platforms, max_results=25)
+                if video_df.empty:
+                    st.info("📢 No results from Juicer. Falling back to YouTube.")
+                    video_df = search_youtube_live(None, search_query, max_results=25, upload_date=upload_date, sort_by=sort_by, duration=video_duration)
+            else:
+                st.warning("⚠️ Juicer API key not found. Using YouTube only.")
+                video_df = search_youtube_live(None, search_query, max_results=25, upload_date=upload_date, sort_by=sort_by, duration=video_duration)
         else:
-            video_df = search_youtube_live(None, search_query, max_results=25)
+            video_df = search_youtube_live(None, search_query, max_results=25, upload_date=upload_date, sort_by=sort_by, duration=video_duration)
         
         progress_placeholder.markdown(f"""
         <div class="progress-container">
@@ -1346,13 +1389,8 @@ def main():
     progress_placeholder.empty()
     
     if video_df.empty:
-        if platform != "YouTube":
-            st.info(f"📢 No videos found on {platform}. Try YouTube or add your API key.")
-            st.info("💡 Switch to YouTube in the sidebar to continue.")
-            st.stop()
-        else:
-            st.error("❌ No videos found. Please try a different search term.")
-            st.stop()
+        st.error("❌ No videos found. Please try a different search term.")
+        st.stop()
     
     # ============================================================
     # INITIALIZE ENGINE
@@ -1384,25 +1422,27 @@ def main():
     engine.update_user_preferences("watch", current)
     save_user_preferences(st.session_state.user_preferences)
     
-    # ============================================================
-    # VIDEO PLAYER
-    # ============================================================
     st.markdown("---")
-    st.success(f"✅ Found {len(video_df)} videos about '{search_query}'")
+    
+    platform_source = current.get("platform", "YouTube")
+    st.success(f"✅ Found {len(video_df)} videos about '{search_query}' from {platform_source}")
     
     col_left, col_right = st.columns([2.2, 1])
     
     with col_left:
-        if show_preview and current.get('embed_url'):
-            st.markdown(f"""
-            <div class="preview-container">
-                <iframe src="{current['embed_url']}?autoplay=0&rel=0" 
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                        allowfullscreen>
-                </iframe>
-            </div>
-            <div class="preview-label">🎬 Preview · Click play to watch a short preview</div>
-            """, unsafe_allow_html=True)
+        if show_preview and current.get('embed_url') and current['embed_url']:
+            if "youtube.com" in current['embed_url']:
+                st.markdown(f"""
+                <div class="preview-container">
+                    <iframe src="{current['embed_url']}?autoplay=0&rel=0" 
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                            allowfullscreen>
+                    </iframe>
+                </div>
+                <div class="preview-label">🎬 Preview · Click play to watch a short preview</div>
+                """, unsafe_allow_html=True)
+            else:
+                st.info(f"📱 Content from {platform_source} - Click 'Watch' button to view")
         
         if not show_preview and current.get('thumbnail_hq') and current['thumbnail_hq']:
             st.markdown(f"""
@@ -1416,7 +1456,11 @@ def main():
                 <div class="video-info">
             """, unsafe_allow_html=True)
         
+        platform_badge = current.get("platform", "YouTube")
         st.markdown(f"""
+                <div style="display:inline-block; background: {colors["accent"]}30; color: {colors["accent"]}; padding:2px 12px; border-radius:20px; font-size:0.7rem; margin-bottom:8px;">
+                    📱 {platform_badge}
+                </div>
                 <div class="video-title-text">{current['title']}</div>
                 <div class="video-channel">📺 <strong>{current['channel']}</strong> · {current.get('published', 'Recently')}</div>
         """, unsafe_allow_html=True)
@@ -1476,7 +1520,8 @@ def main():
             </div>
             """, unsafe_allow_html=True)
         
-        st.markdown(f'<div style="margin-top:12px;"><a href="{current["youtube_url"]}" target="_blank" style="color:{colors["accent"]}; text-decoration:none; font-weight:600;">▶️ Watch on YouTube</a></div>', unsafe_allow_html=True)
+        watch_label = f"▶️ Watch on {current.get('platform', 'YouTube')}"
+        st.markdown(f'<div style="margin-top:12px;"><a href="{current["youtube_url"]}" target="_blank" style="color:{colors["accent"]}; text-decoration:none; font-weight:600;">{watch_label}</a></div>', unsafe_allow_html=True)
         st.markdown('</div></div>', unsafe_allow_html=True)
     
     with col_right:
@@ -1490,7 +1535,6 @@ def main():
         
         st.divider()
         
-        # ===== USER ANALYTICS DASHBOARD =====
         st.markdown("### 📊 Your Analytics")
         
         history = st.session_state.user_preferences.get("watch_history", [])
@@ -1546,7 +1590,6 @@ def main():
         
         st.divider()
         
-        # ===== SHARE VIDEO =====
         st.markdown("### 🔗 Share This Video")
         share_url = current.get("youtube_url", "")
         if share_url:
@@ -1591,6 +1634,7 @@ def main():
                 "action": "liked",
                 "thumbnail": current.get("thumbnail", ""),
                 "video_id": current["video_id"],
+                "platform": current.get("platform", "Unknown"),
                 "timestamp": datetime.now().isoformat()
             })
             save_user_preferences(st.session_state.user_preferences)
@@ -1652,12 +1696,13 @@ def main():
     rec_cols = st.columns(4)
     for idx, (_, row) in enumerate(recommendations.iterrows()):
         with rec_cols[idx % 4]:
+            platform_tag = row.get("platform", "YouTube")
             st.markdown(f"""
             <div class="rec-card">
                 <img src="{row['thumbnail']}" class="rec-thumbnail" alt="Video thumbnail">
                 <div class="rec-info">
                     <div class="rec-title">{row['title'][:55]}{'...' if len(row['title']) > 55 else ''}</div>
-                    <div class="rec-channel">📺 {row['channel'][:22]}</div>
+                    <div class="rec-channel">📱 {platform_tag} · {row['channel'][:15]}</div>
                     <div class="rec-score">🔥 {row['engagement_score']:.1f}% match</div>
                 </div>
             </div>
@@ -1685,7 +1730,7 @@ def main():
                         <img src="{row['thumbnail']}" class="rec-thumbnail" alt="Video thumbnail">
                         <div class="rec-info">
                             <div class="rec-title">{row['title'][:55]}{'...' if len(row['title']) > 55 else ''}</div>
-                            <div class="rec-channel">📺 {row['channel'][:22]}</div>
+                            <div class="rec-channel">📱 {row.get('platform', 'YouTube')} · {row['channel'][:15]}</div>
                         </div>
                     </div>
                     """, unsafe_allow_html=True)
@@ -1771,6 +1816,7 @@ def main():
                 
                 thumbnail = item.get("thumbnail", "")
                 title = item.get("title", "Unknown video")
+                platform = item.get("platform", "Unknown")
                 
                 col1, col2, col3 = st.columns([1, 6, 1])
                 with col1:
@@ -1781,7 +1827,7 @@ def main():
                 with col2:
                     st.write(f"**{title[:60]}{'...' if len(title) > 60 else ''}**")
                 with col3:
-                    st.write(f"{action_emoji} {item.get('action', 'watched')}")
+                    st.write(f"{action_emoji} {platform}")
                 st.divider()
 
 
