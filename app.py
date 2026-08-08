@@ -817,13 +817,28 @@ def main():
     search_query = "Nigeria tech innovation"
     
     # ============================================================
-    # HEADER
+    # HEADER - Mobile Optimized
     # ============================================================
     st.markdown("""
-    <div class="app-title">
-        <h1>🎬 Hacks Stream</h1>
+    <div style="text-align:center; padding: 8px 0 2px 0;">
+        <h1 style="font-size: 2.2rem; font-weight:800; background: linear-gradient(135deg, #f0c040, #ff6b35, #f0c040); background-size: 300% 300%; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: gradientShift 4s ease-in-out infinite; margin-bottom: 0;">🎬 Hacks Stream</h1>
+        <p style="color: #888; font-size: 0.75rem; letter-spacing: 4px; margin-top: -4px;">✦ AI-Powered Video Discovery · Faith · Technology · African Innovation ✦</p>
     </div>
-    <div class="app-subtitle">✦ AI-Powered Video Discovery · Faith · Technology · African Innovation ✦</div>
+    <style>
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        @media (max-width: 768px) {
+            h1 { font-size: 1.6rem !important; }
+            p { font-size: 0.6rem !important; letter-spacing: 2px !important; }
+        }
+        @media (max-width: 480px) {
+            h1 { font-size: 1.3rem !important; }
+            p { font-size: 0.5rem !important; letter-spacing: 1px !important; }
+        }
+    </style>
     """, unsafe_allow_html=True)
     
     # ============================================================
@@ -838,31 +853,7 @@ def main():
         ::-webkit-scrollbar-track {{background: #0a0a1a;}}
         ::-webkit-scrollbar-thumb {{background: {colors["accent"]}; border-radius: 10px;}}
         
-        .app-title {{ text-align: center; padding: 5px 0 0 0; }}
-        .app-title h1 {{
-            font-size: 2.8rem;
-            font-weight: 800;
-            background: linear-gradient(135deg, {colors["accent"]}, #ff6b35, {colors["accent"]});
-            background-size: 300% 300%;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            animation: gradientShift 4s ease-in-out infinite;
-            margin-bottom: 0;
-        }}
-        @keyframes gradientShift {{
-            0% {{ background-position: 0% 50%; }}
-            50% {{ background-position: 100% 50%; }}
-            100% {{ background-position: 0% 50%; }}
-        }}
-        .app-subtitle {{
-            text-align: center;
-            color: {colors["text_secondary"]};
-            font-size: 0.85rem;
-            letter-spacing: 4px;
-            margin-top: -5px;
-        }}
-        
-        .search-container {{ display: flex; justify-content: center; margin: 15px 0 20px 0; }}
+        .search-container {{ display: flex; justify-content: center; margin: 15px 0 20px 0; padding: 0 8px; }}
         .search-wrapper {{
             display: flex;
             align-items: center;
@@ -870,7 +861,7 @@ def main():
             border-radius: 50px;
             padding: 4px 4px 4px 20px;
             border: 1px solid {colors["border"]};
-            width: 70%;
+            width: 100%;
             max-width: 700px;
             transition: all 0.3s ease;
         }}
@@ -884,6 +875,7 @@ def main():
             font-size: 1rem;
             padding: 12px 0;
             outline: none;
+            min-width: 0;
         }}
         .search-wrapper input::placeholder {{ color: {colors["text_secondary"]}; }}
         .search-btn {{
@@ -896,8 +888,22 @@ def main():
             cursor: pointer;
             transition: all 0.3s ease;
             font-size: 0.9rem;
+            white-space: nowrap;
         }}
         .search-btn:hover {{ transform: scale(1.03); box-shadow: 0 8px 30px {colors["accent"]}50; }}
+        
+        @media (max-width: 768px) {{
+            .search-wrapper {{ border-radius: 30px; padding: 3px 3px 3px 16px; }}
+            .search-wrapper input {{ font-size: 0.85rem; padding: 8px 0; }}
+            .search-wrapper input::placeholder {{ font-size: 0.75rem; }}
+            .search-btn {{ font-size: 0.7rem; padding: 6px 14px; }}
+        }}
+        @media (max-width: 480px) {{
+            .search-wrapper {{ border-radius: 25px; padding: 2px 2px 2px 12px; }}
+            .search-wrapper input {{ font-size: 0.75rem; padding: 6px 0; }}
+            .search-wrapper input::placeholder {{ font-size: 0.65rem; }}
+            .search-btn {{ font-size: 0.6rem; padding: 4px 10px; }}
+        }}
         
         .progress-container {{
             width: 100%;
@@ -925,6 +931,12 @@ def main():
         .progress-percent {{ text-align: center; font-size: 0.75rem; color: {colors["text_secondary"]}; margin-top: 6px; }}
         .progress-percent .number {{ color: {colors["accent"]}; font-weight: 700; font-size: 0.9rem; }}
         
+        @media (max-width: 768px) {{
+            .progress-container {{ padding: 10px 15px; margin: 10px auto; }}
+            .progress-label {{ font-size: 0.7rem; }}
+            .progress-percent {{ font-size: 0.65rem; }}
+        }}
+        
         .video-card {{
             background: {colors["card"]};
             backdrop-filter: blur(20px);
@@ -942,9 +954,25 @@ def main():
         .video-channel {{ font-size: 0.9rem; color: {colors["text_secondary"]}; margin-bottom: 8px; }}
         .video-channel strong {{ color: {colors["accent"]}; font-weight: 600; }}
         
+        @media (max-width: 768px) {{
+            .video-card {{ border-radius: 12px; margin: 6px 0; }}
+            .video-info {{ padding: 12px 14px 16px 14px; }}
+            .video-title-text {{ font-size: 1rem; }}
+            .video-channel {{ font-size: 0.75rem; }}
+        }}
+        @media (max-width: 480px) {{
+            .video-title-text {{ font-size: 0.85rem; }}
+            .video-channel {{ font-size: 0.65rem; }}
+        }}
+        
         .synopsis-box {{ background: {colors["border"]}; border-radius: 12px; padding: 14px 18px; margin: 10px 0 12px 0; border-left: 3px solid {colors["accent"]}; }}
         .synopsis-box .synopsis-label {{ font-size: 0.7rem; text-transform: uppercase; letter-spacing: 2px; color: {colors["text_secondary"]}; margin-bottom: 4px; }}
         .synopsis-box .synopsis-text {{ font-size: 0.9rem; color: {colors["text"]}; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }}
+        
+        @media (max-width: 768px) {{
+            .synopsis-box {{ padding: 10px 14px; }}
+            .synopsis-text {{ font-size: 0.8rem; }}
+        }}
         
         .preview-container {{ position: relative; width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 12px; overflow: hidden; margin: 10px 0; }}
         .preview-container iframe {{ width: 100%; height: 100%; border: none; }}
@@ -975,6 +1003,19 @@ def main():
         .rec-channel {{ font-size: 0.7rem; color: {colors["text_secondary"]}; margin-top: 4px; }}
         .rec-score {{ font-size: 0.7rem; color: {colors["accent"]}; font-weight: 700; margin-top: 6px; display: flex; align-items: center; gap: 4px; }}
         
+        @media (max-width: 768px) {{
+            .rec-card {{ border-radius: 10px; }}
+            .rec-info {{ padding: 10px 12px 12px 12px; }}
+            .rec-title {{ font-size: 0.7rem; min-height: 2.2em; }}
+            .rec-channel {{ font-size: 0.6rem; }}
+            .rec-score {{ font-size: 0.6rem; }}
+        }}
+        @media (max-width: 480px) {{
+            .rec-title {{ font-size: 0.65rem; min-height: 2em; }}
+            .rec-channel {{ font-size: 0.55rem; }}
+            .rec-score {{ font-size: 0.55rem; }}
+        }}
+        
         .mode-badge {{ display: inline-block; padding: 8px 20px; border-radius: 30px; font-weight: 700; font-size: 0.85rem; letter-spacing: 1px; }}
         .mode-day {{ background: #00d4ff20; color: #00d4ff; border: 1px solid #00d4ff40; }}
         .mode-evening {{ background: #ffd70020; color: #ffd700; border: 1px solid #ffd70040; }}
@@ -995,6 +1036,16 @@ def main():
         .stat-number {{ font-size: 1.1rem; font-weight: 700; color: {colors["accent"]}; }}
         .stat-label {{ font-size: 0.65rem; color: {colors["text_secondary"]}; text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }}
         
+        @media (max-width: 768px) {{
+            .stat-box {{ padding: 8px 10px; }}
+            .stat-number {{ font-size: 0.9rem; }}
+            .stat-label {{ font-size: 0.5rem; }}
+        }}
+        @media (max-width: 480px) {{
+            .stat-number {{ font-size: 0.8rem; }}
+            .stat-box {{ padding: 4px 6px; }}
+        }}
+        
         .journey-item {{ display: flex; align-items: center; gap: 12px; padding: 8px 12px; border-radius: 10px; background: {colors["border"]}; margin-bottom: 6px; transition: all 0.3s ease; }}
         .journey-item:hover {{ background: {colors["hover"]}; }}
         .journey-thumbnail {{ width: 60px; height: 40px; border-radius: 6px; object-fit: cover; flex-shrink: 0; }}
@@ -1010,51 +1061,81 @@ def main():
         .analytics-label {{ font-size: 0.6rem; color: {colors["text_secondary"]}; text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }}
         
         @media (max-width: 768px) {{
-            .app-title h1 {{ font-size: 1.8rem; }}
-            .search-wrapper {{ width: 95%; border-radius: 30px; }}
-            .search-wrapper input {{ font-size: 0.9rem; padding: 8px 0; }}
-            .search-btn {{ font-size: 0.7rem; padding: 6px 12px; }}
-            .video-title-text {{ font-size: 1rem; }}
-            .video-card {{ border-radius: 12px; margin: 6px 0; }}
-            .video-info {{ padding: 12px 14px 16px 14px; }}
-            .rec-card {{ border-radius: 10px; }}
-            .rec-info {{ padding: 10px 12px 12px 12px; }}
-            .rec-title {{ font-size: 0.7rem; min-height: 2.2em; }}
-            .rec-channel {{ font-size: 0.6rem; }}
-            .rec-score {{ font-size: 0.6rem; }}
-            .stat-box {{ padding: 8px 10px; }}
-            .stat-number {{ font-size: 0.9rem; }}
-            .stat-label {{ font-size: 0.5rem; }}
-            .mode-badge {{ font-size: 0.7rem; padding: 4px 12px; }}
-            .synopsis-box {{ padding: 10px 14px; }}
-            .synopsis-text {{ font-size: 0.8rem; }}
-            .tags-container {{ gap: 4px; }}
-            .tag {{ font-size: 0.6rem; padding: 2px 10px; }}
-            .preview-label {{ font-size: 0.6rem; }}
-            .journey-thumbnail {{ width: 40px; height: 28px; }}
-            .stColumns {{ flex-wrap: wrap !important; }}
-            .stColumns > div {{ flex: 0 0 100% !important; max-width: 100% !important; }}
-            .stButton > button {{ padding: 0.4rem 0.8rem !important; font-size: 0.8rem !important; min-height: 36px; }}
-            .progress-container {{ padding: 10px 15px; margin: 10px auto; }}
-            .progress-label {{ font-size: 0.7rem; }}
-            .progress-percent {{ font-size: 0.65rem; }}
             .analytics-card {{ padding: 8px 10px; }}
             .analytics-number {{ font-size: 1.1rem; }}
             .analytics-label {{ font-size: 0.5rem; }}
         }}
         
+        /* ===== RECOMMENDATIONS GRID ===== */
+        .rec-grid {{
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            padding: 0 4px;
+        }}
+        
+        @media (max-width: 1024px) {{
+            .rec-grid {{ grid-template-columns: repeat(3, 1fr); gap: 12px; }}
+        }}
+        @media (max-width: 768px) {{
+            .rec-grid {{ grid-template-columns: repeat(2, 1fr); gap: 8px; }}
+        }}
         @media (max-width: 480px) {{
-            .app-title h1 {{ font-size: 1.4rem; }}
-            .app-subtitle {{ font-size: 0.6rem; letter-spacing: 2px; }}
-            .search-wrapper {{ border-radius: 20px; padding: 2px 2px 2px 12px; }}
-            .search-btn {{ font-size: 0.6rem; padding: 4px 10px; }}
-            .search-wrapper input {{ font-size: 0.8rem; padding: 6px 0; }}
-            .video-title-text {{ font-size: 0.85rem; }}
-            .video-channel {{ font-size: 0.7rem; }}
-            .rec-title {{ font-size: 0.65rem; min-height: 2em; }}
-            .stat-number {{ font-size: 0.8rem; }}
-            .stat-box {{ padding: 4px 6px; }}
-            .stButton > button {{ width: 100% !important; font-size: 0.7rem !important; padding: 0.3rem 0.6rem !important; }}
+            .rec-grid {{ grid-template-columns: repeat(2, 1fr); gap: 6px; }}
+        }}
+        
+        /* ===== BUTTONS ===== */
+        .stButton > button {{
+            border-radius: 30px !important;
+            font-weight: 600 !important;
+            padding: 0.5rem 1rem !important;
+            font-size: 0.85rem !important;
+            min-height: 44px !important;
+            border: none !important;
+            transition: all 0.3s ease !important;
+            width: 100% !important;
+        }}
+        .stButton > button:hover {{
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+        }}
+        
+        @media (max-width: 768px) {{
+            .stButton > button {{ padding: 0.4rem 0.8rem !important; font-size: 0.75rem !important; min-height: 38px !important; }}
+        }}
+        @media (max-width: 480px) {{
+            .stButton > button {{ font-size: 0.65rem !important; padding: 0.3rem 0.6rem !important; min-height: 32px !important; }}
+        }}
+        
+        /* ===== SIDEBAR ===== */
+        .css-1d391kg {{ padding: 0.5rem 0.8rem !important; }}
+        
+        /* ===== FILTERS ===== */
+        .filter-container {{
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            justify-content: center;
+            margin: 8px 0;
+        }}
+        .filter-btn {{
+            padding: 6px 14px;
+            border-radius: 30px;
+            border: 1px solid {colors["border"]};
+            background: {colors["card"]};
+            color: {colors["text"]};
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.75rem;
+            font-weight: 600;
+            flex: 1 0 auto;
+            min-width: 50px;
+            text-align: center;
+        }}
+        .filter-btn:hover {{
+            background: {colors["accent"]};
+            color: #0a0a1a;
+            border-color: {colors["accent"]};
         }}
     </style>
     """, unsafe_allow_html=True)
