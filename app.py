@@ -740,13 +740,13 @@ class SmartRecommendationEngine:
 
 
 # ============================================================
-# RENDER FUNCTIONS - HORIZONTAL SCROLLING CAROUSEL
+# RENDER FUNCTIONS - HORIZONTAL SCROLLING CAROUSEL (FIXED)
 # ============================================================
 
 def render_trending_carousel(video_df, title="🔥 Trending Now", max_items=8):
     """
     Renders a sleek, horizontal scrollable carousel of video thumbnails.
-    This fills the empty space after the watch link, keeping the page clean.
+    Uses inline CSS to ensure 100% rendering in Streamlit.
     """
     if video_df.empty:
         return
@@ -757,87 +757,25 @@ def render_trending_carousel(video_df, title="🔥 Trending Now", max_items=8):
     # Sort by engagement score to show "Trending" stuff
     trending_df = video_df.sort_values(by="engagement_score", ascending=False).head(max_items)
 
-    # Wrapper for horizontal scrolling
-    st.markdown("""
-    <style>
-        .scroll-container {
-            display: flex;
-            overflow-x: auto;
-            gap: 15px;
-            padding: 10px 0 20px 0;
-            scroll-behavior: smooth;
-            -webkit-overflow-scrolling: touch;
-        }
-        .scroll-container::-webkit-scrollbar {
-            height: 6px;
-        }
-        .scroll-container::-webkit-scrollbar-track {
-            background: rgba(255,255,255,0.05);
-            border-radius: 10px;
-        }
-        .scroll-container::-webkit-scrollbar-thumb {
-            background: #f0c040;
-            border-radius: 10px;
-        }
-        .trending-card {
-            flex: 0 0 220px;
-            background: rgba(20, 20, 40, 0.8);
-            border-radius: 12px;
-            overflow: hidden;
-            border: 1px solid rgba(255,255,255,0.05);
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-        .trending-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 8px 30px rgba(240, 192, 64, 0.15);
-        }
-        .trending-img {
-            width: 100%;
-            aspect-ratio: 16/9;
-            object-fit: cover;
-            display: block;
-        }
-        .trending-info {
-            padding: 8px 12px 12px 12px;
-        }
-        .trending-title {
-            font-weight: 600;
-            font-size: 0.8rem;
-            color: #ffffff;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .trending-meta {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 6px;
-        }
-        .trending-channel {
-            font-size: 0.65rem;
-            color: #999;
-        }
-        .trending-score {
-            font-size: 0.65rem;
-            color: #f0c040;
-            font-weight: 700;
-        }
-    </style>
-    """, unsafe_allow_html=True)
-
-    # Create the HTML string for horizontal scrolling
-    cards_html = '<div class="scroll-container">'
+    # We wrap everything in ONE div using inline styles to guarantee Streamlit renders it
+    cards_html = '<div style="display: flex; overflow-x: auto; gap: 15px; padding: 10px 0 20px 0; scroll-behavior: smooth; -webkit-overflow-scrolling: touch;">'
     
     for _, row in trending_df.iterrows():
+        title_clean = row['title'][:50] + ('...' if len(row['title']) > 50 else '')
+        channel_clean = row['channel'][:15]
+        score = f"{row['engagement_score']:.0f}%"
+        thumbnail = row['thumbnail']
+
         cards_html += f"""
-        <div class="trending-card">
-            <img src="{row['thumbnail']}" class="trending-img" alt="Thumbnail">
-            <div class="trending-info">
-                <div class="trending-title">{row['title'][:50]}{'...' if len(row['title']) > 50 else ''}</div>
-                <div class="trending-meta">
-                    <span class="trending-channel">{row['channel'][:15]}</span>
-                    <span class="trending-score">🔥 {row['engagement_score']:.0f}%</span>
+        <div style="flex: 0 0 220px; background: rgba(20, 20, 40, 0.8); border-radius: 12px; overflow: hidden; border: 1px solid rgba(255,255,255,0.05); transition: transform 0.2s ease;">
+            <img src="{thumbnail}" style="width: 100%; aspect-ratio: 16/9; object-fit: cover; display: block;">
+            <div style="padding: 8px 12px 12px 12px;">
+                <div style="font-weight: 600; font-size: 0.8rem; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                    {title_clean}
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px;">
+                    <span style="font-size: 0.65rem; color: #999;">{channel_clean}</span>
+                    <span style="font-size: 0.65rem; color: #f0c040; font-weight: 700;">🔥 {score}</span>
                 </div>
             </div>
         </div>
@@ -848,11 +786,9 @@ def render_trending_carousel(video_df, title="🔥 Trending Now", max_items=8):
     # Render the scrollable HTML
     st.markdown(cards_html, unsafe_allow_html=True)
     
-    # Since Streamlit doesn't handle click events inside raw HTML easily, 
-    # we provide below buttons to click on the trending videos to load them.
+    # Provide clickable buttons for mobile users to load the trending video
     st.caption("👆 Click a button below to load a trending video:")
     
-    # Create clickable buttons for the trending items to set the session state
     btn_cols = st.columns(min(4, len(trending_df)))
     for idx, (_, row) in enumerate(trending_df.iterrows()):
         with btn_cols[idx % 4]:
