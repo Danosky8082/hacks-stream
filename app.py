@@ -928,7 +928,7 @@ def render_trending_carousel(video_df, title="🔥 Trending Now", max_items=8):
             st.rerun()
 
 # ============================================================
-# MAIN APP (FIXED ERROR HANDLING)
+# MAIN APP (FIXED JUICER PRIORITY & LOGIC)
 # ============================================================
 
 def main():
@@ -1250,7 +1250,7 @@ def main():
         st.divider()
         
         st.markdown("#### 🌐 Platform")
-        platform_options = ["YouTube", "TikTok", "Instagram", "Facebook", "Twitter"]
+        platform_options = ["YouTube", "TikTok", "Instagram", "Facebook", "Twitter", "YouTube + Juicer (All Platforms)"]
         platform = st.selectbox(
             "Select Content Source",
             platform_options,
@@ -1373,7 +1373,7 @@ def main():
         search_query = "Africa tech innovation"
 
     # ============================================================
-    # FETCH REAL DATA
+    # FETCH REAL DATA (FIXED JUICER LOGIC)
     # ============================================================
     if not api_key and platform != "YouTube + Juicer (All Platforms)":
         st.warning("⚠️ Please add your YouTube API key to use this app")
@@ -1401,17 +1401,38 @@ def main():
         """, unsafe_allow_html=True)
         time.sleep(0.3)
         
-        if platform == "YouTube + Juicer (All Platforms)":
+        video_df = pd.DataFrame()
+        
+        # ================= NEW JUICER LOGIC =================
+        # 1. If user explicitly picked TikTok, Instagram, Facebook, or Twitter
+        if platform in ["TikTok", "Instagram", "Facebook", "Twitter"]:
+            st.info(f"📡 Searching {platform} via Juicer...")
+            juicer_key = get_juicer_api_key()
+            if juicer_key:
+                video_df = search_juicer_live(search_query, [platform], max_results=25)
+            else:
+                st.error("❌ Juicer API Key missing! Please add JUICER_API_KEY to .env")
+        
+        # 2. If user picked "YouTube + Juicer (All Platforms)"
+        elif platform == "YouTube + Juicer (All Platforms)":
+            st.info("📡 Searching ALL platforms via Juicer...")
             juicer_key = get_juicer_api_key()
             if juicer_key:
                 platforms = ["tiktok", "instagram", "facebook", "x", "youtube"]
                 video_df = search_juicer_live(search_query, platforms, max_results=25)
+                # If Juicer fails, fall back to YouTube
                 if video_df.empty:
-                    video_df = search_youtube_live(None, search_query, max_results=25)
+                    st.warning("⚠️ Juicer returned no results. Falling back to YouTube...")
+                    video_df = search_youtube_live(api_key, search_query, max_results=25)
             else:
-                video_df = search_youtube_live(None, search_query, max_results=25)
-        else:
-            video_df = search_youtube_live(None, search_query, max_results=25)
+                st.warning("⚠️ Juicer API key not found. Falling back to YouTube.")
+                video_df = search_youtube_live(api_key, search_query, max_results=25)
+        
+        # 3. If user picked YouTube ONLY
+        elif platform == "YouTube":
+            st.info(f"📡 Searching YouTube only...")
+            video_df = search_youtube_live(api_key, search_query, max_results=25)
+        # ====================================================
         
         progress_placeholder.markdown(f"""
         <div class="progress-container">
@@ -1435,11 +1456,9 @@ def main():
     
     if video_df.empty:
         st.error("❌ No videos found. Please try a different search term.")
-        
-        # Add a manual refresh button so you don't have to reload the browser
         if st.button("🔄 Try Again (Quota reset)"):
             st.rerun()
-        st.info("💡 Your API quota may be exhausted. Wait until midnight PST for it to reset, or add more keys to your .env file.")
+        st.info("💡 If searching YouTube, your quota may be exhausted. Try selecting 'TikTok' or 'Instagram' in the sidebar!")
         st.stop()
     
     # ============================================================
