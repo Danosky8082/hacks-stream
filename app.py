@@ -14,7 +14,7 @@ import os
 import json
 import time
 from dotenv import load_dotenv
-import streamlit.components.v1 as components  # <-- CRITICAL NEW IMPORT
+import streamlit.components.v1 as components
 
 # Load environment variables
 load_dotenv()
@@ -755,8 +755,9 @@ def render_trending_carousel(video_df, title="🔥 Trending Now", max_items=8):
     st.markdown(f"### {title}")
     st.caption("Scroll horizontally to discover the most engaging videos")
 
-    # Sort by engagement score to show "Trending" stuff
-    trending_df = video_df.sort_values(by="engagement_score", ascending=False).head(max_items)
+    # CRITICAL CHANGE: Sort by views/likes to ensure it's independent of the AI engine
+    # This is pure "Global Hot" content, not personalized
+    trending_df = video_df.sort_values(by="views", ascending=False).head(max_items)
 
     # Build the FULL HTML document with inline CSS
     # The <style> block MUST be inside the HTML for st.components to pick it up
@@ -825,6 +826,13 @@ def render_trending_carousel(video_df, title="🔥 Trending Now", max_items=8):
             color: #f0c040;
             font-weight: 700;
         }
+        
+        /* Mobile specific fixes for smaller screens */
+        @media (max-width: 600px) {
+            .trending-card {
+                flex: 0 0 150px;
+            }
+        }
     </style>
     <div class="trending-scroll-container">
     """
@@ -847,7 +855,7 @@ def render_trending_carousel(video_df, title="🔥 Trending Now", max_items=8):
     
     html_content += "</div>"
     
-    # Render the HTML using the components module (GUARANTEED TO RENDER)
+    # Render the HTML using the components module
     components.html(html_content, height=280)
 
     # Provide clickable buttons for mobile users
@@ -890,7 +898,7 @@ def main():
     if "theme" not in st.session_state:
         st.session_state.theme = "Dark"
     
-    # FIX: Initialize the app so it doesn't revert to default search on refresh
+    # FIX: Initialize the app so it doesn't force "Nigeria tech innovation" on refresh
     if "initialized" not in st.session_state:
         st.session_state.initialized = False
         
@@ -1420,11 +1428,12 @@ def main():
     
     search_col1, search_col2, search_col3 = st.columns([5, 1, 1])
     with search_col1:
-        # If the app hasn't been initialized, leave search empty to force "Surprise Me" logic later
-        default_search = "" if not st.session_state.initialized else "Nigeria tech innovation"
+        # CRITICAL FIX: ONLY keep "Nigeria tech innovation" if there is zero search history
+        # Otherwise, leave it empty so users can type whatever they want globally.
+        default_search = "Nigeria tech innovation" if not st.session_state.search_history else ""
         search_query = st.text_input(
             "",
-            placeholder="🔍 Search for videos... (e.g., AI in Africa, Christian Tech, Afrofuturism)",
+            placeholder="🔍 Search for ANY video globally... (e.g., AI, Cooking, Space, Motivation)",
             value=default_search,
             label_visibility="collapsed"
         )
@@ -1441,10 +1450,10 @@ def main():
     # 1. If "Surprise Me" is clicked, search for a random mix
     if surprise_clicked:
         st.session_state.surprise_me = True
-        # Set a random, engaging search to make the homepage vibrant
         search_query = random.choice([
             "AI in Africa", "Afrofuturism", "Tech innovation Nigeria", 
-            "Gospel music 2026", "African startups", "Future of AI"
+            "Gospel music 2026", "African startups", "Future of AI",
+            "Space exploration", "Coding tutorials", "Motivation"
         ])
         st.session_state.initialized = True # Mark as initialized so it remembers state
     
@@ -1922,7 +1931,7 @@ def main():
     # ============================================================
     st.markdown("---")
     st.markdown("### 📱 Recommended For You")
-    st.caption("AI-powered recommendations based on your preferences")
+    st.caption("AI-powered recommendations based on your preferences (Matches the current video)")
     
     current_index = video_df[video_df["video_id"] == current["video_id"]].index[0]
     recommendations = engine.get_recommendations(
