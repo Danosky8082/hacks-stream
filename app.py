@@ -741,7 +741,7 @@ class SmartRecommendationEngine:
 
 
 # ============================================================
-# RENDER FUNCTIONS - HORIZONTAL SCROLLING CAROUSEL 
+# RENDER FUNCTIONS - CLICKABLE HORIZONTAL CAROUSEL (FORCED SCROLLBAR)
 # ============================================================
 
 def render_trending_carousel(video_df, title="🔥 Trending Now", max_items=8):
@@ -764,19 +764,23 @@ def render_trending_carousel(video_df, title="🔥 Trending Now", max_items=8):
         .trending-scroll-container {
             display: flex;
             overflow-x: auto;
+            overflow-y: hidden; /* Hides vertical scrollbar so we only have horizontal */
             gap: 15px;
             padding: 10px 0 20px 0;
             scroll-behavior: smooth;
             -webkit-overflow-scrolling: touch;
             
-            /* ===== FORCE SCROLLBAR TO SHOW ===== */
-            scrollbar-width: auto;       /* Firefox */
-            overflow-x: auto;            /* Enables scrolling logic */
+            /* ===== FORCES SCROLLBAR TO SHOW IN FIREFOX ===== */
+            scrollbar-width: thin;
+            scrollbar-color: #f0c040 rgba(255,255,255,0.05);
         }
         
-        /* CHROME / EDGE / SAFARI SCROLLBAR STYLING */
+        /* ===== FORCES SCROLLBAR TO SHOW IN CHROME/EDGE/SAFARI ===== */
         .trending-scroll-container::-webkit-scrollbar {
-            height: 8px;  /* Height of the scrollbar */
+            height: 8px;
+            width: 8px;
+            display: block; /* Force browser to render it */
+            -webkit-appearance: none;
         }
         .trending-scroll-container::-webkit-scrollbar-track {
             background: rgba(255,255,255,0.05);
@@ -787,7 +791,13 @@ def render_trending_carousel(video_df, title="🔥 Trending Now", max_items=8):
             border-radius: 10px;
         }
         .trending-scroll-container::-webkit-scrollbar-thumb:hover {
-            background: #ffd700; /* Slightly brighter on hover */
+            background: #ffd700;
+        }
+        /* This specifically overrides Windows/Mac OS hiding it */
+        .trending-scroll-container::-webkit-scrollbar-button {
+            display: block;
+            height: 0;
+            width: 0;
         }
 
         .trending-card {
