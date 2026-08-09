@@ -1262,7 +1262,7 @@ def main():
         st.divider()
         
         st.markdown("#### 🌐 Platform")
-        platform_options = ["YouTube", "TikTok", "Instagram", "Facebook", "Twitter", "YouTube + Juicer (All Platforms)"]
+        platform_options = ["YouTube", "TikTok", "Instagram", "Facebook", "Twitter", "Vimeo", "Reddit", "LinkedIn", "YouTube + Juicer (All Platforms)"]
         platform = st.selectbox(
             "Select Content Source",
             platform_options,
