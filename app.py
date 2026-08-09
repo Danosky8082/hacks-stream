@@ -744,10 +744,6 @@ class SmartRecommendationEngine:
 # RENDER FUNCTIONS - HORIZONTAL SCROLLING CAROUSEL 
 # ============================================================
 
-# ============================================================
-# RENDER FUNCTIONS - CLICKABLE HORIZONTAL CAROUSEL (FINAL FIX)
-# ============================================================
-
 def render_trending_carousel(video_df, title="🔥 Trending Now", max_items=8):
     """
     Renders a clickable horizontal scrollable carousel.
@@ -772,9 +768,15 @@ def render_trending_carousel(video_df, title="🔥 Trending Now", max_items=8):
             padding: 10px 0 20px 0;
             scroll-behavior: smooth;
             -webkit-overflow-scrolling: touch;
+            
+            /* ===== FORCE SCROLLBAR TO SHOW ===== */
+            scrollbar-width: auto;       /* Firefox */
+            overflow-x: auto;            /* Enables scrolling logic */
         }
+        
+        /* CHROME / EDGE / SAFARI SCROLLBAR STYLING */
         .trending-scroll-container::-webkit-scrollbar {
-            height: 6px;
+            height: 8px;  /* Height of the scrollbar */
         }
         .trending-scroll-container::-webkit-scrollbar-track {
             background: rgba(255,255,255,0.05);
@@ -784,6 +786,10 @@ def render_trending_carousel(video_df, title="🔥 Trending Now", max_items=8):
             background: #f0c040;
             border-radius: 10px;
         }
+        .trending-scroll-container::-webkit-scrollbar-thumb:hover {
+            background: #ffd700; /* Slightly brighter on hover */
+        }
+
         .trending-card {
             flex: 0 0 220px;
             background: rgba(20, 20, 40, 0.8);
@@ -870,21 +876,16 @@ def render_trending_carousel(video_df, title="🔥 Trending Now", max_items=8):
     components.html(html_content, height=280)
 
     # ============================================================
-    # URL PARAMETER HANDLER (FIXED)
+    # URL PARAMETER HANDLER
     # ============================================================
-    # We grab the video ID directly from the URL query params (set by the HTML form)
     query_params = st.query_params
     loaded_id_list = query_params.get("load_video")
     
-    # streamlit.query_params returns a LIST. We must check if it exists and extract index 0
     if loaded_id_list and len(loaded_id_list) > 0:
         loaded_id = loaded_id_list[0]
         if loaded_id:
-            # If a video was clicked via the carousel, update the state
             st.session_state.current_video = loaded_id
-            # Clear the URL param so refreshing doesn't break the app
             del query_params["load_video"]
-            # Force reload to apply the current video
             st.rerun()
 
     # ============================================================
