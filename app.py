@@ -199,8 +199,12 @@ def search_juicer_live(query, platforms, max_results=25):
                 if not isinstance(item, dict):
                     continue
                 
-                title = item.get("title", item.get("text", item.get("content", "Untitled")))
-                description = item.get("description", item.get("caption", ""))
+                # ===== FIX: IMPROVED DATA EXTRACTION =====
+                # Facebook often puts data in 'message' instead of 'title'
+                raw_title = item.get("title", item.get("text", item.get("content", item.get("message", ""))))
+                title = str(raw_title) if raw_title else "Facebook Post"
+                
+                description = item.get("description", item.get("caption", item.get("message", "")))
                 platform = item.get("source", item.get("platform", "unknown"))
                 author = item.get("author", {}).get("name", item.get("username", item.get("channel", "Unknown")))
                 url = item.get("url", item.get("link", item.get("permalink", "")))
@@ -215,7 +219,11 @@ def search_juicer_live(query, platforms, max_results=25):
                     likes = random.randint(10, 5000)
                     shares = int(likes * 0.15)
                 
+                # ===== FIX: FALLBACK THUMBNAIL =====
                 thumbnail = item.get("thumbnail", item.get("image", item.get("cover", "")))
+                if not thumbnail:
+                    # If no thumbnail is found, use a nice gradient placeholder
+                    thumbnail = f"https://ui-avatars.com/api/?name={platform}&background=f0c040&color=0f0f1a&size=512&rounded=true"
                 
                 # Smart Tagging
                 tags = []
