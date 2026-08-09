@@ -940,7 +940,7 @@ def render_trending_carousel(video_df, title="🔥 Trending Now", max_items=8):
             st.rerun()
 
 # ============================================================
-# MAIN APP (FIXED FACEBOOK HASHTAG SEARCH)
+# MAIN APP (FIXED JUICER FALLBACK & FACEBOOK BYPASS)
 # ============================================================
 
 def main():
@@ -1385,7 +1385,7 @@ def main():
         search_query = "Africa tech innovation"
 
     # ============================================================
-    # FETCH REAL DATA (FIXED JUICER LOGIC)
+    # FETCH REAL DATA (FIXED JUICER LOGIC - FINAL)
     # ============================================================
     if not api_key and platform != "YouTube + Juicer (All Platforms)":
         st.warning("⚠️ Please add your YouTube API key to use this app")
@@ -1415,30 +1415,38 @@ def main():
         
         video_df = pd.DataFrame()
         
-        # ================= NEW JUICER LOGIC =================
-        # 1. If user explicitly picked TikTok, Instagram, Facebook, or Twitter
-        if platform in ["TikTok", "Instagram", "Facebook", "Twitter"]:
+        # ================= FINAL JUICER/ YOUTUBE LOGIC =================
+        
+        # 1. If user picked FACEBOOK -> Skip Juicer completely and go to YouTube (It never works)
+        if platform == "Facebook":
+            st.info("📡 Facebook searches often fail. Switching to YouTube automatically...")
+            video_df = search_youtube_live(api_key, search_query, max_results=25)
+            
+        # 2. If user explicitly picked TikTok, Instagram, or Twitter -> Use Juicer
+        elif platform in ["TikTok", "Instagram", "Twitter"]:
             st.info(f"📡 Searching {platform} via Juicer...")
             juicer_key = get_juicer_api_key()
             if juicer_key:
-                # CRITICAL FIX: Prepend hashtag for Facebook/Instagram searches
                 final_query = search_query
-                if platform in ["Facebook", "Instagram"]:
+                if platform in ["Instagram"]:
                     if not search_query.startswith("#"):
                         final_query = "#" + search_query.replace(" ", "")
-                
                 video_df = search_juicer_live(final_query, [platform], max_results=25)
+                # If Juicer returns empty, fallback to YouTube
+                if video_df.empty:
+                    st.warning("⚠️ Juicer returned no results. Falling back to YouTube...")
+                    video_df = search_youtube_live(api_key, search_query, max_results=25)
             else:
-                st.error("❌ Juicer API Key missing! Please add JUICER_API_KEY to .env")
+                st.warning("⚠️ Juicer API key missing. Falling back to YouTube.")
+                video_df = search_youtube_live(api_key, search_query, max_results=25)
         
-        # 2. If user picked "YouTube + Juicer (All Platforms)"
+        # 3. If user picked "YouTube + Juicer (All Platforms)"
         elif platform == "YouTube + Juicer (All Platforms)":
             st.info("📡 Searching ALL platforms via Juicer...")
             juicer_key = get_juicer_api_key()
             if juicer_key:
-                platforms = ["tiktok", "instagram", "facebook", "x", "youtube"]
+                platforms = ["tiktok", "instagram", "twitter", "youtube"]
                 video_df = search_juicer_live(search_query, platforms, max_results=25)
-                # If Juicer fails, fall back to YouTube
                 if video_df.empty:
                     st.warning("⚠️ Juicer returned no results. Falling back to YouTube...")
                     video_df = search_youtube_live(api_key, search_query, max_results=25)
@@ -1446,8 +1454,8 @@ def main():
                 st.warning("⚠️ Juicer API key not found. Falling back to YouTube.")
                 video_df = search_youtube_live(api_key, search_query, max_results=25)
         
-        # 3. If user picked YouTube ONLY
-        elif platform == "YouTube":
+        # 4. If user picked YouTube ONLY (Fallback for everything else)
+        else:
             st.info(f"📡 Searching YouTube only...")
             video_df = search_youtube_live(api_key, search_query, max_results=25)
         # ====================================================
