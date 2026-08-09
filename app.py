@@ -1430,7 +1430,7 @@ def main():
     with search_col1:
         # CRITICAL FIX: ONLY keep "Nigeria tech innovation" if there is zero search history
         # Otherwise, leave it empty so users can type whatever they want globally.
-        default_search = "Nigeria tech innovation" if not st.session_state.search_history else ""
+        default_search = "Search for ANY video globally" if not st.session_state.search_history else ""
         search_query = st.text_input(
             "",
             placeholder="🔍 Search for ANY video globally... (e.g., AI, Cooking, Space, Motivation)",
