@@ -745,7 +745,7 @@ class SmartRecommendationEngine:
 # ============================================================
 
 # ============================================================
-# RENDER FUNCTIONS - CLICKABLE HORIZONTAL CAROUSEL (FIXED)
+# RENDER FUNCTIONS - CLICKABLE HORIZONTAL CAROUSEL (FINAL FIX)
 # ============================================================
 
 def render_trending_carousel(video_df, title="🔥 Trending Now", max_items=8):
@@ -845,11 +845,11 @@ def render_trending_carousel(video_df, title="🔥 Trending Now", max_items=8):
         title_clean = row['title'][:50] + ('...' if len(row['title']) > 50 else '')
         video_id = row['video_id']
         
-        # THE FIX: Wrap the card in a form that submits the ID directly to the URL
+        # Wrap the card in a form that submits the ID directly to the URL
         html_content += f"""
         <form method="get" action="" style="display:contents;">
             <input type="hidden" name="load_video" value="{video_id}">
-            <button type="submit" style="background:none; border:none; padding:0; cursor:pointer;">
+            <button type="submit" style="background:none; border:none; padding:0; cursor:pointer; width:100%;">
                 <div class="trending-card">
                     <img src="{row['thumbnail']}" class="trending-img" alt="Thumbnail">
                     <div class="trending-info">
@@ -870,19 +870,22 @@ def render_trending_carousel(video_df, title="🔥 Trending Now", max_items=8):
     components.html(html_content, height=280)
 
     # ============================================================
-    # URL PARAMETER HANDLER
+    # URL PARAMETER HANDLER (FIXED)
     # ============================================================
     # We grab the video ID directly from the URL query params (set by the HTML form)
     query_params = st.query_params
-    loaded_id = query_params.get("load_video", [None])
+    loaded_id_list = query_params.get("load_video")
     
-    if loaded_id and loaded_id[0]:
-        # If a video was clicked via the carousel, update the state
-        st.session_state.current_video = loaded_id[0]
-        # Clear the URL param so refreshing doesn't break the app
-        del query_params["load_video"]
-        # Force reload to apply the current video
-        st.rerun()
+    # streamlit.query_params returns a LIST. We must check if it exists and extract index 0
+    if loaded_id_list and len(loaded_id_list) > 0:
+        loaded_id = loaded_id_list[0]
+        if loaded_id:
+            # If a video was clicked via the carousel, update the state
+            st.session_state.current_video = loaded_id
+            # Clear the URL param so refreshing doesn't break the app
+            del query_params["load_video"]
+            # Force reload to apply the current video
+            st.rerun()
 
     # ============================================================
     # FALLBACK: BUTTONS (For accessibility)
