@@ -928,7 +928,7 @@ def render_trending_carousel(video_df, title="🔥 Trending Now", max_items=8):
             st.rerun()
 
 # ============================================================
-# MAIN APP (FIXED UNDEFINED VARIABLES)
+# MAIN APP (FIXED VIDEO LOADING & DEFAULT SEARCH TEXT)
 # ============================================================
 
 def main():
@@ -1312,14 +1312,15 @@ def main():
         st.caption("💡 I learn from your likes and skips!")
     
     # ============================================================
-    # SEARCH BAR
+    # SEARCH BAR (UPDATED PLACEHOLDER TEXT)
     # ============================================================
     st.markdown('<div class="search-container">', unsafe_allow_html=True)
     st.markdown('<div class="search-wrapper">', unsafe_allow_html=True)
     
     search_col1, search_col2, search_col3 = st.columns([5, 1, 1])
     with search_col1:
-        default_search = "Nigeria tech innovation" if not st.session_state.search_history else ""
+        # Changed default to empty string so the placeholder clearly shows
+        default_search = "" 
         search_query = st.text_input(
             "",
             placeholder="🔍 Search for ANY video globally...",
@@ -1336,6 +1337,7 @@ def main():
     # ============================================================
     # INTELLIGENT DATA FETCHING LOGIC
     # ============================================================
+    # If search bar is empty and user clicks Search, we default to a random trend
     if surprise_clicked:
         search_query = random.choice([
             "AI in Africa", "Afrofuturism", "Tech innovation Nigeria", 
@@ -1344,6 +1346,8 @@ def main():
         st.session_state.initialized = True
     
     elif search_clicked:
+        if not search_query:
+            search_query = random.choice(["African Tech Revolution", "Faith & Innovation", "Future of Africa"])
         st.session_state.search_triggered = True
         st.session_state.initialized = True
     
@@ -1424,9 +1428,10 @@ def main():
     query_params = st.query_params
     loaded_id_list = query_params.get("load_video")
     if loaded_id_list and len(loaded_id_list) > 0:
-        st.session_state.current_video = loaded_id_list[0]
+        loaded_id = loaded_id_list[0]
+        st.session_state.current_video = loaded_id
         st.session_state.view_mode = "watch"
-        del query_params["load_video"]
+        # CRITICAL FIX: DO NOT delete the param yet! Let the watch mode load first.
         st.rerun()
 
     # 1. HOME MODE: Show a beautiful 4-column grid for discovery
