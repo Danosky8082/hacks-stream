@@ -940,7 +940,7 @@ def render_trending_carousel(video_df, title="🔥 Trending Now", max_items=8):
             st.rerun()
 
 # ============================================================
-# MAIN APP (FIXED JUICER FALLBACK & FACEBOOK BYPASS)
+# MAIN APP (FIXED JUICER FALLBACK - VIMEO & REDDIT)
 # ============================================================
 
 def main():
@@ -1262,6 +1262,7 @@ def main():
         st.divider()
         
         st.markdown("#### 🌐 Platform")
+        # ===== ADDED VIMEO & REDDIT TO DROPDOWN =====
         platform_options = ["YouTube", "TikTok", "Instagram", "Facebook", "Twitter", "Vimeo", "Reddit", "LinkedIn", "YouTube + Juicer (All Platforms)"]
         platform = st.selectbox(
             "Select Content Source",
@@ -1384,8 +1385,8 @@ def main():
         # If app is initialized but the box is blank, default to a safe fallback
         search_query = "Africa tech innovation"
 
-        # ============================================================
-    # FETCH REAL DATA (FIXED AUTO-SWITCH TO TIKTOK)
+    # ============================================================
+    # FETCH REAL DATA (FIXED JUICER LOGIC - VIMEO & REDDIT FALLBACK)
     # ============================================================
     if not api_key and platform != "YouTube + Juicer (All Platforms)":
         st.warning("⚠️ Please add your YouTube API key to use this app")
@@ -1422,12 +1423,12 @@ def main():
             st.info("📡 Facebook searches often fail. Switching to YouTube automatically...")
             video_df = search_youtube_live(api_key, search_query, max_results=25)
             if video_df.empty:
-                st.warning("⚠️ YouTube failed (Quota may be exhausted). Switching to TikTok...")
-                video_df = search_juicer_live(search_query, ["tiktok"], max_results=25)
+                st.warning("⚠️ YouTube failed (Quota may be exhausted). Switching to Vimeo...")
+                video_df = search_juicer_live(search_query, ["vimeo"], max_results=25)
                 if not video_df.empty:
-                    st.success("🎉 Success! Loaded TikTok videos instead.")
+                    st.success("🎉 Success! Loaded Vimeo videos instead.")
             
-        # 2. If user explicitly picked TikTok, Instagram, or Twitter -> Use Juicer
+        # 2. If user picked TikTok, Instagram, Twitter -> Use Juicer (Try Vimeo/Reddit if they fail)
         elif platform in ["TikTok", "Instagram", "Twitter"]:
             st.info(f"📡 Searching {platform} via Juicer...")
             juicer_key = get_juicer_api_key()
@@ -1438,43 +1439,62 @@ def main():
                         final_query = "#" + search_query.replace(" ", "")
                 video_df = search_juicer_live(final_query, [platform], max_results=25)
                 if video_df.empty:
-                    st.warning("⚠️ Juicer returned no results. Trying TikTok fallback...")
-                    # Fallback to TikTok
-                    video_df = search_juicer_live(search_query, ["tiktok"], max_results=25)
+                    st.warning("⚠️ Juicer returned no results. Trying Vimeo fallback...")
+                    # Fallback to Vimeo (No login required, no quota)
+                    video_df = search_juicer_live(search_query, ["vimeo"], max_results=25)
                     if video_df.empty:
-                        st.warning("⚠️ TikTok also failed. Falling back to YouTube...")
-                        video_df = search_youtube_live(api_key, search_query, max_results=25)
+                        st.warning("⚠️ Vimeo also failed. Trying Reddit...")
+                        video_df = search_juicer_live(search_query, ["reddit"], max_results=25)
+                        if video_df.empty:
+                            st.warning("⚠️ Reddit also failed. Falling back to YouTube...")
+                            video_df = search_youtube_live(api_key, search_query, max_results=25)
             else:
                 st.warning("⚠️ Juicer API key missing. Falling back to YouTube.")
                 video_df = search_youtube_live(api_key, search_query, max_results=25)
         
-        # 3. If user picked "YouTube + Juicer (All Platforms)"
+        # 3. If user picked Vimeo OR Reddit OR LinkedIn (No login required)
+        elif platform in ["Vimeo", "Reddit", "LinkedIn"]:
+            st.info(f"📡 Searching {platform} via Juicer...")
+            juicer_key = get_juicer_api_key()
+            if juicer_key:
+                video_df = search_juicer_live(search_query, [platform], max_results=25)
+                if video_df.empty:
+                    st.warning(f"⚠️ Juicer returned no results on {platform}. Trying YouTube fallback...")
+                    video_df = search_youtube_live(api_key, search_query, max_results=25)
+            else:
+                st.warning("⚠️ Juicer API key not found. Falling back to YouTube.")
+                video_df = search_youtube_live(api_key, search_query, max_results=25)
+        
+        # 4. If user picked "YouTube + Juicer (All Platforms)"
         elif platform == "YouTube + Juicer (All Platforms)":
             st.info("📡 Searching ALL platforms via Juicer...")
             juicer_key = get_juicer_api_key()
             if juicer_key:
-                platforms = ["tiktok", "instagram", "twitter", "youtube"]
+                platforms = ["tiktok", "instagram", "twitter", "vimeo", "reddit", "youtube"]
                 video_df = search_juicer_live(search_query, platforms, max_results=25)
                 if video_df.empty:
                     st.warning("⚠️ Juicer returned no results. Trying YouTube...")
                     video_df = search_youtube_live(api_key, search_query, max_results=25)
                     if video_df.empty:
-                         st.warning("⚠️ YouTube failed. Trying TikTok...")
-                         video_df = search_juicer_live(search_query, ["tiktok"], max_results=25)
+                         st.warning("⚠️ YouTube failed. Trying Vimeo...")
+                         video_df = search_juicer_live(search_query, ["vimeo"], max_results=25)
             else:
-                st.warning("⚠️ Juicer API key not found. Trying TikTok fallback...")
-                video_df = search_juicer_live(search_query, ["tiktok"], max_results=25)
+                st.warning("⚠️ Juicer API key not found. Trying Vimeo fallback...")
+                video_df = search_juicer_live(search_query, ["vimeo"], max_results=25)
                 if video_df.empty:
-                    st.warning("⚠️ TikTok failed. Falling back to YouTube.")
+                    st.warning("⚠️ Vimeo failed. Falling back to YouTube.")
                     video_df = search_youtube_live(api_key, search_query, max_results=25)
         
-        # 4. If user picked YouTube ONLY
+        # 5. If user picked YouTube ONLY
         else:
             st.info(f"📡 Searching YouTube only...")
             video_df = search_youtube_live(api_key, search_query, max_results=25)
             if video_df.empty:
-                st.warning("⚠️ YouTube failed (Quota exhausted). Switching to TikTok...")
-                video_df = search_juicer_live(search_query, ["tiktok"], max_results=25)
+                st.warning("⚠️ YouTube failed (Quota exhausted). Switching to Vimeo...")
+                video_df = search_juicer_live(search_query, ["vimeo"], max_results=25)
+                if video_df.empty:
+                    st.warning("⚠️ Vimeo failed. Trying Reddit...")
+                    video_df = search_juicer_live(search_query, ["reddit"], max_results=25)
         # ====================================================
         
         progress_placeholder.markdown(f"""
@@ -1501,7 +1521,7 @@ def main():
         st.error("❌ No videos found. Please try a different search term.")
         if st.button("🔄 Try Again (Quota reset)"):
             st.rerun()
-        st.info("💡 If searching YouTube, your quota may be exhausted. Try selecting 'TikTok' or 'Instagram' in the sidebar!")
+        st.info("💡 If searching YouTube, your quota may be exhausted. Try selecting 'Vimeo' or 'Reddit' in the sidebar!")
         st.stop()
     
     # ============================================================
