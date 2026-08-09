@@ -741,46 +741,44 @@ class SmartRecommendationEngine:
 
 
 # ============================================================
-# RENDER FUNCTIONS - CLICKABLE HORIZONTAL CAROUSEL (FORCED SCROLLBAR)
+# RENDER FUNCTIONS - CLICKABLE CAROUSEL (WITH SCROLL BUTTONS)
 # ============================================================
 
 def render_trending_carousel(video_df, title="🔥 Trending Now", max_items=8):
     """
-    Renders a clickable horizontal scrollable carousel.
-    Uses a hidden HTML form to safely pass the Video ID to Streamlit via URL query params.
+    Renders a clickable horizontal scrollable carousel with custom scroll buttons.
+    Fixes desktop scroll issues by using Javascript buttons inside the component.
     """
     if video_df.empty:
         return
 
     st.markdown(f"### {title}")
-    st.caption("Tap a card to instantly load the video")
+    st.caption("Tap a card to load instantly. Use the < > arrows to scroll.")
 
-    # Sort by views to show independent "Global Hot" content
     trending_df = video_df.sort_values(by="views", ascending=False).head(max_items)
 
     # Build the FULL HTML document
     html_content = """
     <style>
+        .carousel-wrapper {
+            position: relative;
+            width: 100%;
+        }
         .trending-scroll-container {
             display: flex;
             overflow-x: auto;
-            overflow-y: hidden; /* Hides vertical scrollbar so we only have horizontal */
             gap: 15px;
             padding: 10px 0 20px 0;
             scroll-behavior: smooth;
             -webkit-overflow-scrolling: touch;
             
-            /* ===== FORCES SCROLLBAR TO SHOW IN FIREFOX ===== */
+            /* Force scrollbar to attempt to show */
             scrollbar-width: thin;
             scrollbar-color: #f0c040 rgba(255,255,255,0.05);
         }
-        
-        /* ===== FORCES SCROLLBAR TO SHOW IN CHROME/EDGE/SAFARI ===== */
         .trending-scroll-container::-webkit-scrollbar {
-            height: 8px;
-            width: 8px;
-            display: block; /* Force browser to render it */
-            -webkit-appearance: none;
+            height: 6px;
+            display: block;
         }
         .trending-scroll-container::-webkit-scrollbar-track {
             background: rgba(255,255,255,0.05);
@@ -790,10 +788,6 @@ def render_trending_carousel(video_df, title="🔥 Trending Now", max_items=8):
             background: #f0c040;
             border-radius: 10px;
         }
-        .trending-scroll-container::-webkit-scrollbar-thumb:hover {
-            background: #ffd700;
-        }
-        /* This specifically overrides Windows/Mac OS hiding it */
         .trending-scroll-container::-webkit-scrollbar-button {
             display: block;
             height: 0;
@@ -847,13 +841,43 @@ def render_trending_carousel(video_df, title="🔥 Trending Now", max_items=8):
             color: #f0c040;
             font-weight: 700;
         }
-        @media (max-width: 600px) {
-            .trending-card {
-                flex: 0 0 150px;
-            }
+
+        /* Custom Scroll Buttons */
+        .scroll-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(15, 15, 26, 0.9);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #fff;
+            font-size: 24px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.2s;
+            z-index: 10;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+        .scroll-btn:hover {
+            background: #f0c040;
+            color: #0f0f1a;
+            border-color: #f0c040;
+        }
+        .scroll-btn-left { left: -20px; }
+        .scroll-btn-right { right: -20px; }
+
+        @media (max-width: 700px) {
+            .trending-card { flex: 0 0 150px; }
+            .scroll-btn { display: none; } /* Hide buttons on mobile, use touch scroll */
         }
     </style>
-    <div class="trending-scroll-container">
+
+    <div class="carousel-wrapper">
+        <div class="trending-scroll-container" id="myScrollContainer">
     """
 
     # Build the inner HTML for each card
@@ -861,7 +885,6 @@ def render_trending_carousel(video_df, title="🔥 Trending Now", max_items=8):
         title_clean = row['title'][:50] + ('...' if len(row['title']) > 50 else '')
         video_id = row['video_id']
         
-        # Wrap the card in a form that submits the ID directly to the URL
         html_content += f"""
         <form method="get" action="" style="display:contents;">
             <input type="hidden" name="load_video" value="{video_id}">
@@ -880,10 +903,16 @@ def render_trending_carousel(video_df, title="🔥 Trending Now", max_items=8):
         </form>
         """
     
-    html_content += "</div>"
+    html_content += """
+        </div>
+        <!-- Custom JavaScript Buttons -->
+        <button class="scroll-btn scroll-btn-left" onclick="document.getElementById('myScrollContainer').scrollBy({left: -300, behavior: 'smooth'});">‹</button>
+        <button class="scroll-btn scroll-btn-right" onclick="document.getElementById('myScrollContainer').scrollBy({left: 300, behavior: 'smooth'});">›</button>
+    </div>
+    """
     
     # Render the HTML using the components module
-    components.html(html_content, height=280)
+    components.html(html_content, height=310)
 
     # ============================================================
     # URL PARAMETER HANDLER
@@ -897,18 +926,6 @@ def render_trending_carousel(video_df, title="🔥 Trending Now", max_items=8):
             st.session_state.current_video = loaded_id
             del query_params["load_video"]
             st.rerun()
-
-    # ============================================================
-    # FALLBACK: BUTTONS (For accessibility)
-    # ============================================================
-    st.caption("👆 Tap a card above, or use the buttons below to load:")
-    
-    btn_cols = st.columns(min(4, len(trending_df)))
-    for idx, (_, row) in enumerate(trending_df.iterrows()):
-        with btn_cols[idx % 4]:
-            if st.button(f"▶️ {row['title'][:20]}...", key=f"trend_fallback_btn_{idx}"):
-                st.session_state.current_video = row["video_id"]
-                st.rerun()
 
 # ============================================================
 # MAIN APP
