@@ -740,47 +740,123 @@ class SmartRecommendationEngine:
 
 
 # ============================================================
-# RENDER FUNCTIONS (Fixes The Empty Space)
+# RENDER FUNCTIONS - HORIZONTAL SCROLLING CAROUSEL
 # ============================================================
 
-def render_trending_grid(video_df, title="🔥 Trending Now", max_items=12):
+def render_trending_carousel(video_df, title="🔥 Trending Now", max_items=8):
     """
-    Renders a vibrant grid of video thumbnails.
-    This fills the empty space between the search bar and the feedback bar.
+    Renders a sleek, horizontal scrollable carousel of video thumbnails.
+    This fills the empty space after the watch link, keeping the page clean.
     """
     if video_df.empty:
         return
 
     st.markdown(f"### {title}")
-    st.caption("Discover the most engaging videos right now")
+    st.caption("Scroll horizontally to discover the most engaging videos")
 
     # Sort by engagement score to show "Trending" stuff
     trending_df = video_df.sort_values(by="engagement_score", ascending=False).head(max_items)
 
-    # 4 columns for desktop, 2 for mobile
-    cols = st.columns(4)
+    # Wrapper for horizontal scrolling
+    st.markdown("""
+    <style>
+        .scroll-container {
+            display: flex;
+            overflow-x: auto;
+            gap: 15px;
+            padding: 10px 0 20px 0;
+            scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch;
+        }
+        .scroll-container::-webkit-scrollbar {
+            height: 6px;
+        }
+        .scroll-container::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+        }
+        .scroll-container::-webkit-scrollbar-thumb {
+            background: #f0c040;
+            border-radius: 10px;
+        }
+        .trending-card {
+            flex: 0 0 220px;
+            background: rgba(20, 20, 40, 0.8);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.05);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .trending-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 30px rgba(240, 192, 64, 0.15);
+        }
+        .trending-img {
+            width: 100%;
+            aspect-ratio: 16/9;
+            object-fit: cover;
+            display: block;
+        }
+        .trending-info {
+            padding: 8px 12px 12px 12px;
+        }
+        .trending-title {
+            font-weight: 600;
+            font-size: 0.8rem;
+            color: #ffffff;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .trending-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 6px;
+        }
+        .trending-channel {
+            font-size: 0.65rem;
+            color: #999;
+        }
+        .trending-score {
+            font-size: 0.65rem;
+            color: #f0c040;
+            font-weight: 700;
+        }
+    </style>
+    """, unsafe_allow_html=True)
+
+    # Create the HTML string for horizontal scrolling
+    cards_html = '<div class="scroll-container">'
     
-    for idx, (_, row) in enumerate(trending_df.iterrows()):
-        with cols[idx % 4]:
-            # Card styling integrated into HTML for scroll-and-click vibrancy
-            st.markdown(f"""
-            <div style="background: rgba(20, 20, 40, 0.8); border-radius: 12px; overflow: hidden; 
-                        border: 1px solid rgba(255,255,255,0.05); margin-bottom: 12px; cursor: pointer;
-                        transition: transform 0.2s ease, box-shadow 0.2s ease;">
-                <img src="{row['thumbnail']}" style="width:100%; aspect-ratio: 16/9; object-fit:cover; display:block;">
-                <div style="padding: 8px 10px 12px 10px;">
-                    <div style="font-weight:600; font-size:0.8rem; color:#ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                        {row['title'][:50]}{'...' if len(row['title']) > 50 else ''}
-                    </div>
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px;">
-                        <span style="font-size:0.65rem; color:#999;">{row['channel'][:15]}</span>
-                        <span style="font-size:0.65rem; color:#f0c040; font-weight:700;">🔥 {row['engagement_score']:.0f}%</span>
-                    </div>
+    for _, row in trending_df.iterrows():
+        cards_html += f"""
+        <div class="trending-card">
+            <img src="{row['thumbnail']}" class="trending-img" alt="Thumbnail">
+            <div class="trending-info">
+                <div class="trending-title">{row['title'][:50]}{'...' if len(row['title']) > 50 else ''}</div>
+                <div class="trending-meta">
+                    <span class="trending-channel">{row['channel'][:15]}</span>
+                    <span class="trending-score">🔥 {row['engagement_score']:.0f}%</span>
                 </div>
             </div>
-            """, unsafe_allow_html=True)
-            
-            if st.button(f"▶️ Watch", key=f"trending_btn_{idx}"):
+        </div>
+        """
+    
+    cards_html += '</div>'
+    
+    # Render the scrollable HTML
+    st.markdown(cards_html, unsafe_allow_html=True)
+    
+    # Since Streamlit doesn't handle click events inside raw HTML easily, 
+    # we provide below buttons to click on the trending videos to load them.
+    st.caption("👆 Click a button below to load a trending video:")
+    
+    # Create clickable buttons for the trending items to set the session state
+    btn_cols = st.columns(min(4, len(trending_df)))
+    for idx, (_, row) in enumerate(trending_df.iterrows()):
+        with btn_cols[idx % 4]:
+            if st.button(f"▶️ {row['title'][:20]}...", key=f"trend_btn_{idx}"):
                 st.session_state.current_video = row["video_id"]
                 st.rerun()
 
@@ -1562,12 +1638,6 @@ def main():
         st.session_state.current_video = video_df.iloc[0]["video_id"]
     
     # ============================================================
-    # 🌟 VIBRANT HOMEPAGE FIX: DISPLAY TRENDING GRID ABOVE THE FEEDBACK BAR
-    # ============================================================
-    # This renders the thumbnails immediately after search, filling the "empty void"
-    render_trending_grid(video_df, title="🔥 Trending Now", max_items=12)
-
-    # ============================================================
     # DISPLAY CURRENT VIDEO - WITH BIGGER PREVIEW
     # ============================================================
     current_row = video_df[video_df["video_id"] == st.session_state.current_video]
@@ -1775,6 +1845,13 @@ def main():
         st.markdown("### 💡 Pro Tip")
         st.caption("The more you use the ❤️ and 👎 buttons, the smarter I get!")
     
+    # ============================================================
+    # 🔥 VIBRANT HOMEPAGE FIX: DISPLAY TRENDING CAROUSEL HERE
+    # (Directly after the stats and "Watch on Youtube" link, 
+    # before the Feedback buttons. This completely fills the empty void).
+    # ============================================================
+    render_trending_carousel(video_df, title="🔥 Trending Now", max_items=8)
+
     # ============================================================
     # ACTION BUTTONS
     # ============================================================
