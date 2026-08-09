@@ -842,7 +842,7 @@ def main():
     """, unsafe_allow_html=True)
     
     # ============================================================
-    # CSS - COMPLETE FIXED DARK THEME
+    # CSS - COMPLETE FIXED DARK THEME WITH BIGGER PREVIEW
     # ============================================================
     st.markdown(f"""
     <style>
@@ -925,6 +925,31 @@ def main():
             white-space: nowrap;
         }}
         .search-btn:hover {{ transform: scale(1.03); box-shadow: 0 8px 30px rgba(240, 192, 64, 0.3); }}
+        
+        /* ===== BIGGER PREVIEW CONTAINER ===== */
+        .preview-container {{
+            position: relative;
+            width: 100%;
+            aspect-ratio: 16/9;
+            background: #000;
+            border-radius: 16px;
+            overflow: hidden;
+            margin: 15px 0;
+            box-shadow: 0 8px 40px rgba(0,0,0,0.6);
+            border: 1px solid rgba(255,255,255,0.05);
+        }}
+        .preview-container iframe {{
+            width: 100%;
+            height: 100%;
+            border: none;
+        }}
+        .preview-label {{
+            font-size: 0.75rem;
+            color: #aaaaaa !important;
+            text-align: center;
+            margin-top: 6px;
+            letter-spacing: 1px;
+        }}
         
         /* ===== VIDEO CARDS ===== */
         .video-card {{
@@ -1031,6 +1056,15 @@ def main():
         /* ===== MOBILE RESPONSIVE ===== */
         @media (max-width: 768px) {{
             .app-title h1 {{ font-size: 1.6rem !important; }}
+            .preview-container {{
+                border-radius: 12px;
+                margin: 10px 0;
+                box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+            }}
+            .preview-label {{
+                font-size: 0.65rem;
+                margin-top: 4px;
+            }}
             .video-title-text {{ font-size: 1rem; }}
             .video-channel {{ font-size: 0.75rem; }}
             .stat-box {{ padding: 8px 10px; }}
@@ -1042,6 +1076,15 @@ def main():
         }}
         @media (max-width: 480px) {{
             .app-title h1 {{ font-size: 1.3rem !important; }}
+            .preview-container {{
+                border-radius: 10px;
+                margin: 8px 0;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            }}
+            .preview-label {{
+                font-size: 0.55rem;
+                margin-top: 3px;
+            }}
             .video-title-text {{ font-size: 0.85rem; }}
             .video-channel {{ font-size: 0.65rem; }}
             .rec-title {{ font-size: 0.65rem; }}
@@ -1460,7 +1503,7 @@ def main():
         st.session_state.current_video = video_df.iloc[0]["video_id"]
     
     # ============================================================
-    # DISPLAY CURRENT VIDEO
+    # DISPLAY CURRENT VIDEO - WITH BIGGER PREVIEW
     # ============================================================
     current_row = video_df[video_df["video_id"] == st.session_state.current_video]
     if current_row.empty:
@@ -1477,23 +1520,25 @@ def main():
     platform_source = current.get("platform", "YouTube")
     st.success(f"✅ Found {len(video_df)} videos about '{search_query}' from {platform_source}")
     
+    # ===== BIG PREVIEW (Full Width) =====
+    if show_preview and current.get('embed_url') and current['embed_url']:
+        if "youtube.com" in current['embed_url']:
+            st.markdown(f"""
+            <div class="preview-container">
+                <iframe src="{current['embed_url']}?autoplay=0&rel=0" 
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                        allowfullscreen>
+                </iframe>
+            </div>
+            <div class="preview-label">🎬 Preview · Click play to watch a short preview</div>
+            """, unsafe_allow_html=True)
+        else:
+            st.info(f"📱 Content from {platform_source} - Click 'Watch' button to view")
+    
+    # ===== Video Info (Below Preview) =====
     col_left, col_right = st.columns([2.2, 1])
     
     with col_left:
-        if show_preview and current.get('embed_url') and current['embed_url']:
-            if "youtube.com" in current['embed_url']:
-                st.markdown(f"""
-                <div class="preview-container">
-                    <iframe src="{current['embed_url']}?autoplay=0&rel=0" 
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                            allowfullscreen>
-                    </iframe>
-                </div>
-                <div class="preview-label">🎬 Preview · Click play to watch a short preview</div>
-                """, unsafe_allow_html=True)
-            else:
-                st.info(f"📱 Content from {platform_source} - Click 'Watch' button to view")
-        
         if not show_preview and current.get('thumbnail_hq') and current['thumbnail_hq']:
             st.markdown(f"""
             <div class="video-card">
@@ -1505,10 +1550,15 @@ def main():
             <div class="video-card">
                 <div class="video-info">
             """, unsafe_allow_html=True)
+        else:
+            st.markdown(f"""
+            <div class="video-card">
+                <div class="video-info">
+            """, unsafe_allow_html=True)
         
         platform_badge = current.get("platform", "YouTube")
         st.markdown(f"""
-                <div style="display:inline-block; background: {colors["accent"]}30; color: {colors["accent"]}; padding:2px 12px; border-radius:20px; font-size:0.7rem; margin-bottom:8px;">
+                <div style="display:inline-block; background: {colors["accent"]}30; color: {colors["accent"]}; padding:4px 16px; border-radius:20px; font-size:0.7rem; margin-bottom:10px;">
                     📱 {platform_badge}
                 </div>
                 <div class="video-title-text">{current['title']}</div>
