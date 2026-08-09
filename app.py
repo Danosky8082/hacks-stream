@@ -928,7 +928,7 @@ def render_trending_carousel(video_df, title="🔥 Trending Now", max_items=8):
             st.rerun()
 
 # ============================================================
-# MAIN APP (UPDATED FOR HOME GRID)
+# MAIN APP (FIXED UNDEFINED VARIABLES)
 # ============================================================
 
 def main():
@@ -1459,6 +1459,16 @@ def main():
     else:
         engine = SmartRecommendationEngine(video_df, st.session_state.user_preferences)
         
+        # === FIX: DEFINE MISSING VARIABLES FOR WATCH MODE ===
+        filter_tag = st.session_state.get("filter_tag", None)
+        tag_classes = {
+            "tech": "tag-tech", "faith": "tag-faith", "africa": "tag-africa",
+            "future": "tag-future", "fun": "tag-fun", "afrofuturism": "tag-tech",
+            "innovation": "tag-future", "christianity": "tag-faith", "ai": "tag-tech",
+            "robotics": "tag-tech", "inspiration": "tag-default", "motivation": "tag-default"
+        }
+        # =====================================================
+
         if "current_video" not in st.session_state or st.session_state.current_video not in video_df["video_id"].values:
             st.session_state.current_video = video_df.iloc[0]["video_id"]
         
