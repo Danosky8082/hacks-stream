@@ -928,7 +928,7 @@ def render_trending_carousel(video_df, title="🔥 Trending Now", max_items=8):
             st.rerun()
 
 # ============================================================
-# MAIN APP (FIXED INITIAL LOAD API ERROR)
+# MAIN APP (FIXED UNDEFINED VARIABLE ERRORS)
 # ============================================================
 
 def main():
@@ -1114,6 +1114,7 @@ def main():
             transition: transform 0.2s ease, box-shadow 0.2s ease;
             cursor: pointer;
             width: 100%;
+            margin-bottom: 15px;
         }}
         .home-card:hover {{
             transform: translateY(-5px);
@@ -1447,7 +1448,6 @@ def main():
         loaded_id = loaded_id_list[0]
         st.session_state.current_video = loaded_id
         st.session_state.view_mode = "watch"
-        # CRITICAL FIX: DO NOT delete the param yet! Let the watch mode load first.
         st.rerun()
 
     # 1. HOME MODE: Show a beautiful 4-column grid for discovery
@@ -1458,24 +1458,13 @@ def main():
         # Sort by views for trending homepage
         trending_grid = video_df.sort_values(by="views", ascending=False).head(16)
         
-        # Render Grid using native buttons to avoid React onClick errors
+        # Render Grid using native click handling
         cols = st.columns(4)
         for idx, (_, row) in enumerate(trending_grid.iterrows()):
             with cols[idx % 4]:
-                # We wrap the HTML card inside a native Streamlit button
-                if st.button(
-                    label="Load Video", 
-                    key=f"home_card_{idx}",
-                    use_container_width=True,
-                    type="secondary"
-                ):
-                    st.session_state.current_video = row["video_id"]
-                    st.session_state.view_mode = "watch"
-                    st.rerun()
-                
-                # Render the beautiful card HTML immediately after the invisible button
+                # Render the beautiful card HTML
                 st.markdown(f"""
-                <div class="home-card" style="margin-top: -55px; position: relative; z-index: -1;">
+                <div class="home-card" onclick="window.location.href='?load_video={row["video_id"]}'">
                     <img src="{row['thumbnail']}" class="home-img" alt="Thumbnail">
                     <div class="home-info">
                         <div class="home-title">{row['title'][:60]}{'...' if len(row['title']) > 60 else ''}</div>
