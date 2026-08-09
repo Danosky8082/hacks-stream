@@ -928,7 +928,7 @@ def render_trending_carousel(video_df, title="🔥 Trending Now", max_items=8):
             st.rerun()
 
 # ============================================================
-# MAIN APP (FIXED JUICER PRIORITY & LOGIC)
+# MAIN APP (FIXED FACEBOOK HASHTAG SEARCH)
 # ============================================================
 
 def main():
@@ -1409,7 +1409,13 @@ def main():
             st.info(f"📡 Searching {platform} via Juicer...")
             juicer_key = get_juicer_api_key()
             if juicer_key:
-                video_df = search_juicer_live(search_query, [platform], max_results=25)
+                # CRITICAL FIX: Prepend hashtag for Facebook/Instagram searches
+                final_query = search_query
+                if platform in ["Facebook", "Instagram"]:
+                    if not search_query.startswith("#"):
+                        final_query = "#" + search_query.replace(" ", "")
+                
+                video_df = search_juicer_live(final_query, [platform], max_results=25)
             else:
                 st.error("❌ Juicer API Key missing! Please add JUICER_API_KEY to .env")
         
