@@ -1385,8 +1385,8 @@ def main():
         # If app is initialized but the box is blank, default to a safe fallback
         search_query = "Africa tech innovation"
 
-    # ============================================================
-    # FETCH REAL DATA (FIXED JUICER LOGIC - VIMEO & REDDIT FALLBACK)
+           # ============================================================
+    # FETCH REAL DATA (MIDNIGHT RESET LOGIC)
     # ============================================================
     if not api_key and platform != "YouTube + Juicer (All Platforms)":
         st.warning("⚠️ Please add your YouTube API key to use this app")
@@ -1416,86 +1416,31 @@ def main():
         
         video_df = pd.DataFrame()
         
-        # ================= FINAL JUICER/ YOUTUBE LOGIC =================
+        # ================= MIDNIGHT RESET LOGIC =================
         
-        # 1. If user picked FACEBOOK -> Skip Juicer completely and go to YouTube (It never works)
-        if platform == "Facebook":
-            st.info("📡 Facebook searches often fail. Switching to YouTube automatically...")
+        # 1. If user picked YouTube OR "YouTube + Juicer (All Platforms)"
+        if platform in ["YouTube", "YouTube + Juicer (All Platforms)"]:
+            st.info(f"📡 Searching YouTube...")
             video_df = search_youtube_live(api_key, search_query, max_results=25)
             if video_df.empty:
-                st.warning("⚠️ YouTube failed (Quota may be exhausted). Switching to Vimeo...")
-                video_df = search_juicer_live(search_query, ["vimeo"], max_results=25)
-                if not video_df.empty:
-                    st.success("🎉 Success! Loaded Vimeo videos instead.")
-            
-        # 2. If user picked TikTok, Instagram, Twitter -> Use Juicer (Try Vimeo/Reddit if they fail)
-        elif platform in ["TikTok", "Instagram", "Twitter"]:
+                st.warning("⚠️ YouTube Quota Exhausted. Please wait until midnight PST for reset.")
+        
+        # 2. If user picked a Juicer-only platform (Vimeo, Reddit, etc.)
+        elif platform in ["Vimeo", "Reddit", "LinkedIn", "TikTok", "Instagram", "Facebook", "Twitter"]:
             st.info(f"📡 Searching {platform} via Juicer...")
             juicer_key = get_juicer_api_key()
             if juicer_key:
                 final_query = search_query
-                if platform in ["Instagram"]:
+                if platform in ["Instagram", "Facebook"]:
                     if not search_query.startswith("#"):
                         final_query = "#" + search_query.replace(" ", "")
                 video_df = search_juicer_live(final_query, [platform], max_results=25)
+                
                 if video_df.empty:
-                    st.warning("⚠️ Juicer returned no results. Trying Vimeo fallback...")
-                    # Fallback to Vimeo (No login required, no quota)
-                    video_df = search_juicer_live(search_query, ["vimeo"], max_results=25)
-                    if video_df.empty:
-                        st.warning("⚠️ Vimeo also failed. Trying Reddit...")
-                        video_df = search_juicer_live(search_query, ["reddit"], max_results=25)
-                        if video_df.empty:
-                            st.warning("⚠️ Reddit also failed. Falling back to YouTube...")
-                            video_df = search_youtube_live(api_key, search_query, max_results=25)
+                    st.warning(f"⚠️ Juicer found no results for {platform}. Try YouTube after midnight PST.")
             else:
-                st.warning("⚠️ Juicer API key missing. Falling back to YouTube.")
-                video_df = search_youtube_live(api_key, search_query, max_results=25)
-        
-        # 3. If user picked Vimeo OR Reddit OR LinkedIn (No login required)
-        elif platform in ["Vimeo", "Reddit", "LinkedIn"]:
-            st.info(f"📡 Searching {platform} via Juicer...")
-            juicer_key = get_juicer_api_key()
-            if juicer_key:
-                video_df = search_juicer_live(search_query, [platform], max_results=25)
-                if video_df.empty:
-                    st.warning(f"⚠️ Juicer returned no results on {platform}. Trying YouTube fallback...")
-                    video_df = search_youtube_live(api_key, search_query, max_results=25)
-            else:
-                st.warning("⚠️ Juicer API key not found. Falling back to YouTube.")
-                video_df = search_youtube_live(api_key, search_query, max_results=25)
-        
-        # 4. If user picked "YouTube + Juicer (All Platforms)"
-        elif platform == "YouTube + Juicer (All Platforms)":
-            st.info("📡 Searching ALL platforms via Juicer...")
-            juicer_key = get_juicer_api_key()
-            if juicer_key:
-                platforms = ["tiktok", "instagram", "twitter", "vimeo", "reddit", "youtube"]
-                video_df = search_juicer_live(search_query, platforms, max_results=25)
-                if video_df.empty:
-                    st.warning("⚠️ Juicer returned no results. Trying YouTube...")
-                    video_df = search_youtube_live(api_key, search_query, max_results=25)
-                    if video_df.empty:
-                         st.warning("⚠️ YouTube failed. Trying Vimeo...")
-                         video_df = search_juicer_live(search_query, ["vimeo"], max_results=25)
-            else:
-                st.warning("⚠️ Juicer API key not found. Trying Vimeo fallback...")
-                video_df = search_juicer_live(search_query, ["vimeo"], max_results=25)
-                if video_df.empty:
-                    st.warning("⚠️ Vimeo failed. Falling back to YouTube.")
-                    video_df = search_youtube_live(api_key, search_query, max_results=25)
-        
-        # 5. If user picked YouTube ONLY
-        else:
-            st.info(f"📡 Searching YouTube only...")
-            video_df = search_youtube_live(api_key, search_query, max_results=25)
-            if video_df.empty:
-                st.warning("⚠️ YouTube failed (Quota exhausted). Switching to Vimeo...")
-                video_df = search_juicer_live(search_query, ["vimeo"], max_results=25)
-                if video_df.empty:
-                    st.warning("⚠️ Vimeo failed. Trying Reddit...")
-                    video_df = search_juicer_live(search_query, ["reddit"], max_results=25)
-        # ====================================================
+                st.error("❌ Juicer API Key missing! Please add JUICER_API_KEY to .env")
+        # =========================================================
         
         progress_placeholder.markdown(f"""
         <div class="progress-container">
@@ -1518,10 +1463,10 @@ def main():
     progress_placeholder.empty()
     
     if video_df.empty:
-        st.error("❌ No videos found. Please try a different search term.")
-        if st.button("🔄 Try Again (Quota reset)"):
+        st.error("❌ No videos found.")
+        if st.button("🔄 Try Again"):
             st.rerun()
-        st.info("💡 If searching YouTube, your quota may be exhausted. Try selecting 'Vimeo' or 'Reddit' in the sidebar!")
+        st.info("💡 Tip: YouTube quota resets at midnight PST. Select 'Vimeo' or 'Reddit' to test Juicer, or wait for YouTube to reset!")
         st.stop()
     
     # ============================================================
