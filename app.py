@@ -928,7 +928,7 @@ def render_trending_carousel(video_df, title="🔥 Trending Now", max_items=8):
             st.rerun()
 
 # ============================================================
-# MAIN APP (FIXED REACT ERROR & HOME GRID)
+# MAIN APP (FIXED INITIAL LOAD API ERROR)
 # ============================================================
 
 def main():
@@ -1327,8 +1327,12 @@ def main():
     
     search_col1, search_col2, search_col3 = st.columns([5, 1, 1])
     with search_col1:
-        # Changed default to empty string so the placeholder clearly shows
-        default_search = "" 
+        # The "value" is set dynamically below based on initialization
+        if not st.session_state.initialized:
+            default_search = "" 
+        else:
+            default_search = "" 
+            
         search_query = st.text_input(
             "",
             placeholder="🔍 Search for ANY video globally...",
@@ -1360,9 +1364,13 @@ def main():
         st.session_state.initialized = True
     
     elif not st.session_state.initialized:
-        search_query = random.choice(["African Tech Revolution", "Faith & Innovation", "Future of Africa"])
+        # CRITICAL FIX: Populate search_query with a valid initial search term so the API works!
+        search_query = "Africa tech innovation"
         st.session_state.initialized = True
-    
+    elif not search_query:
+        # If app is initialized but the box is blank, default to a safe fallback
+        search_query = "Africa tech innovation"
+
     # ============================================================
     # FETCH REAL DATA
     # ============================================================
