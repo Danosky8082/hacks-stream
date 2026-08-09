@@ -928,7 +928,7 @@ def render_trending_carousel(video_df, title="🔥 Trending Now", max_items=8):
             st.rerun()
 
 # ============================================================
-# MAIN APP
+# MAIN APP (UPDATED FOR HOME GRID)
 # ============================================================
 
 def main():
@@ -956,6 +956,10 @@ def main():
     
     if "theme" not in st.session_state:
         st.session_state.theme = "Dark"
+    
+    # NEW: Track if the user is browsing the Grid or watching a Video
+    if "view_mode" not in st.session_state:
+        st.session_state.view_mode = "home" # "home" or "watch"
     
     # FIX: Initialize the app so it doesn't force "Nigeria tech innovation" on refresh
     if "initialized" not in st.session_state:
@@ -1032,7 +1036,7 @@ def main():
     """, unsafe_allow_html=True)
     
     # ============================================================
-    # CSS - COMPLETE FIXED DARK THEME WITH BIGGER PREVIEW
+    # CSS - COMPLETE FIXED DARK THEME
     # ============================================================
     st.markdown(f"""
     <style>
@@ -1056,29 +1060,6 @@ def main():
         }}
         .css-1d391kg .stMarkdown, .css-1d391kg p, .css-1d391kg label {{
             color: #e0e0e0 !important;
-        }}
-        
-        /* ===== HEADER ===== */
-        .app-title h1 {{
-            font-size: 2.2rem;
-            font-weight: 800;
-            background: linear-gradient(135deg, #f0c040, #ff6b35, #f0c040);
-            background-size: 300% 300%;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            animation: gradientShift 4s ease-in-out infinite;
-            margin-bottom: 0;
-        }}
-        @keyframes gradientShift {{
-            0% {{ background-position: 0% 50%; }}
-            50% {{ background-position: 100% 50%; }}
-            100% {{ background-position: 0% 50%; }}
-        }}
-        .app-subtitle {{
-            color: #aaaaaa !important;
-            font-size: 0.85rem;
-            letter-spacing: 4px;
-            margin-top: -5px;
         }}
         
         /* ===== SEARCH BAR ===== */
@@ -1116,30 +1097,31 @@ def main():
         }}
         .search-btn:hover {{ transform: scale(1.03); box-shadow: 0 8px 30px rgba(240, 192, 64, 0.3); }}
         
-        /* ===== BIGGER PREVIEW CONTAINER ===== */
-        .preview-container {{
-            position: relative;
+        /* ===== HOME GRID CARDS ===== */
+        .home-card {{
+            background: rgba(20, 20, 40, 0.85);
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.06);
+            overflow: hidden;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            cursor: pointer;
+            margin-bottom: 15px;
+        }}
+        .home-card:hover {{
+            transform: translateY(-5px);
+            box-shadow: 0 8px 40px rgba(240, 192, 64, 0.15);
+        }}
+        .home-img {{
             width: 100%;
             aspect-ratio: 16/9;
-            background: #000;
-            border-radius: 16px;
-            overflow: hidden;
-            margin: 15px 0;
-            box-shadow: 0 8px 40px rgba(0,0,0,0.6);
-            border: 1px solid rgba(255,255,255,0.05);
+            object-fit: cover;
+            display: block;
         }}
-        .preview-container iframe {{
-            width: 100%;
-            height: 100%;
-            border: none;
-        }}
-        .preview-label {{
-            font-size: 0.75rem;
-            color: #aaaaaa !important;
-            text-align: center;
-            margin-top: 6px;
-            letter-spacing: 1px;
-        }}
+        .home-info {{ padding: 12px 16px 16px 16px; }}
+        .home-title {{ font-weight: 700; font-size: 0.95rem; color: #ffffff; line-height: 1.3; margin-bottom: 6px; }}
+        .home-channel {{ font-size: 0.8rem; color: #aaaaaa; }}
+        .home-stats {{ display: flex; justify-content: space-between; margin-top: 8px; font-size: 0.75rem; color: #888; }}
+        .home-views {{ color: #f0c040; font-weight: 600; }}
         
         /* ===== VIDEO CARDS ===== */
         .video-card {{
@@ -1190,22 +1172,6 @@ def main():
         .tag-future {{ background: #a855f720 !important; color: #a855f7 !important; border: 1px solid #a855f730 !important; }}
         .tag-default {{ background: rgba(255,255,255,0.06) !important; color: #aaaaaa !important; }}
         
-        /* ===== RECOMMENDATION CARDS ===== */
-        .rec-card {{
-            background: rgba(20, 20, 40, 0.7) !important;
-            border-radius: 14px;
-            border: 1px solid rgba(255,255,255,0.04) !important;
-            height: 100%;
-        }}
-        .rec-title {{
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: #ffffff !important;
-            line-height: 1.3;
-        }}
-        .rec-channel {{ font-size: 0.7rem; color: #999999 !important; }}
-        .rec-score {{ font-size: 0.7rem; color: #f0c040 !important; font-weight: 700; }}
-        
         /* ===== BUTTONS ===== */
         .stButton > button {{
             border-radius: 30px !important;
@@ -1242,103 +1208,6 @@ def main():
         #MainMenu {{visibility: hidden;}}
         footer {{visibility: hidden;}}
         header {{background: transparent !important;}}
-        
-        /* ===== MOBILE RESPONSIVE ===== */
-        @media (max-width: 768px) {{
-            .app-title h1 {{ font-size: 1.6rem !important; }}
-            .preview-container {{
-                border-radius: 12px;
-                margin: 10px 0;
-                box-shadow: 0 4px 20px rgba(0,0,0,0.4);
-            }}
-            .preview-label {{
-                font-size: 0.65rem;
-                margin-top: 4px;
-            }}
-            .video-title-text {{ font-size: 1rem; }}
-            .video-channel {{ font-size: 0.75rem; }}
-            .stat-box {{ padding: 8px 10px; }}
-            .stat-number {{ font-size: 0.9rem; }}
-            .stat-label {{ font-size: 0.5rem; }}
-            .rec-title {{ font-size: 0.7rem; }}
-            .search-wrapper input {{ font-size: 0.85rem; padding: 8px 0; }}
-            .search-btn {{ font-size: 0.7rem; padding: 6px 14px !important; }}
-        }}
-        @media (max-width: 480px) {{
-            .app-title h1 {{ font-size: 1.3rem !important; }}
-            .preview-container {{
-                border-radius: 10px;
-                margin: 8px 0;
-                box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-            }}
-            .preview-label {{
-                font-size: 0.55rem;
-                margin-top: 3px;
-            }}
-            .video-title-text {{ font-size: 0.85rem; }}
-            .video-channel {{ font-size: 0.65rem; }}
-            .rec-title {{ font-size: 0.65rem; }}
-            .stat-number {{ font-size: 0.8rem; }}
-            .stButton > button {{ font-size: 0.65rem !important; min-height: 32px !important; }}
-            .search-wrapper input {{ font-size: 0.75rem; padding: 6px 0; }}
-            .search-btn {{ font-size: 0.6rem; padding: 4px 10px !important; }}
-        }}
-        
-        /* ===== DROPDOWN FIX ===== */
-        select, .stSelectbox div[data-baseweb="select"] {{
-            background-color: #1a1a2e !important;
-            color: #ffffff !important;
-        }}
-        
-        /* ===== TEXT COLORS ===== */
-        .stMarkdown, .stText, .stCaption, p, label, div {{
-            color: #ffffff !important;
-        }}
-        
-        /* ===== PROGRESS BAR ===== */
-        .progress-container {{
-            background: rgba(20, 20, 40, 0.7) !important;
-            border-radius: 16px;
-            border: 1px solid rgba(255,255,255,0.06) !important;
-            padding: 15px 25px;
-            margin: 20px auto;
-            max-width: 700px;
-        }}
-        .progress-label {{ color: #aaaaaa !important; }}
-        .progress-label .highlight {{ color: #f0c040 !important; }}
-        .progress-track {{ background: rgba(255,255,255,0.06) !important; }}
-        .progress-fill {{
-            background: linear-gradient(90deg, #f0c040, #ff6b35, #a855f7);
-            background-size: 200% 100%;
-            animation: shimmer 2s ease-in-out infinite;
-        }}
-        @keyframes shimmer {{ 0% {{ background-position: 200% 0; }} 100% {{ background-position: -200% 0; }} }}
-        .progress-percent .number {{ color: #f0c040 !important; }}
-        
-        /* ===== SYNOPSIS ===== */
-        .synopsis-box {{
-            background: rgba(255,255,255,0.04) !important;
-            border-radius: 12px;
-            padding: 14px 18px;
-            border-left: 3px solid #f0c040 !important;
-        }}
-        .synopsis-label {{ color: #999999 !important; }}
-        .synopsis-text {{ color: #dddddd !important; }}
-        
-        /* ===== RECOMMENDATIONS GRID ===== */
-        .rec-grid {{
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 15px;
-        }}
-        @media (max-width: 1024px) {{ .rec-grid {{ grid-template-columns: repeat(3, 1fr); }} }}
-        @media (max-width: 768px) {{ .rec-grid {{ grid-template-columns: repeat(2, 1fr); gap: 8px; }} }}
-        @media (max-width: 480px) {{ .rec-grid {{ grid-template-columns: repeat(2, 1fr); gap: 6px; }} }}
-        
-        /* ===== SCROLLBAR ===== */
-        ::-webkit-scrollbar {{width: 6px;}}
-        ::-webkit-scrollbar-track {{background: #0a0a1a;}}
-        ::-webkit-scrollbar-thumb {{background: #f0c040; border-radius: 10px;}}
     </style>
     """, unsafe_allow_html=True)
     
@@ -1371,9 +1240,7 @@ def main():
         
         st.divider()
         
-        # ===== MULTI-PLATFORM SELECTOR =====
         st.markdown("#### 🌐 Platform")
-        
         platform_options = ["YouTube", "TikTok", "Instagram", "Facebook", "Twitter"]
         platform = st.selectbox(
             "Select Content Source",
@@ -1383,9 +1250,7 @@ def main():
         
         st.divider()
         
-        # ===== API KEY STATUS =====
         st.markdown("#### 🔑 API Status")
-        
         youtube_keys = get_youtube_api_keys()
         youtube_count = len(youtube_keys)
         
@@ -1399,42 +1264,34 @@ def main():
         juicer_key = get_juicer_api_key()
         juicer_status = "✅" if juicer_key else "❌"
         
-        api_status = {
-            "YouTube": youtube_status,
-            "Juicer (Multi-Platform)": juicer_status
-        }
-        
+        api_status = {"YouTube": youtube_status, "Juicer (Multi-Platform)": juicer_status}
         for name, status in api_status.items():
             st.caption(f"{status} {name}")
         
         if juicer_key:
-            st.success("🌐 Juicer active - Searching TikTok, Instagram, Facebook, X, and more!")
+            st.success("🌐 Juicer active!")
         else:
-            st.info("💡 Add JUICER_API_KEY to .env for multi-platform search")
+            st.info("💡 Add JUICER_API_KEY to .env")
         
         st.divider()
         
         # ===== DATA SOURCE =====
         st.markdown("#### 📡 Data Source")
-        
         if "YouTube" in platform:
             api_key = get_available_youtube_key()
             if api_key:
                 st.success("✅ YouTube Connected")
             else:
-                api_key = st.text_input("🔑 YouTube API Key", type="password", 
-                                       placeholder="Get one at console.cloud.google.com")
+                api_key = st.text_input("🔑 YouTube API Key", type="password", placeholder="Get one at console.cloud.google.com")
         else:
             api_key = get_available_youtube_key()
         
         st.divider()
         
-        # ===== THEME SELECTOR =====
         st.markdown("#### 🎨 Theme")
         theme_options = ["Dark", "Light", "Afro"]
         selected_theme = st.selectbox(
-            "Choose your vibe",
-            theme_options,
+            "Choose your vibe", theme_options,
             index=theme_options.index(st.session_state.theme) if st.session_state.theme in theme_options else 0
         )
         if selected_theme != st.session_state.theme:
@@ -1446,35 +1303,10 @@ def main():
         show_preview = st.toggle("🎬 Show Video Preview", value=True)
         
         st.divider()
-        
-        # ===== TRENDING TOPICS =====
-        st.markdown("#### 📈 Trending Topics")
-        
-        if st.session_state.user_preferences.get("liked_tags"):
-            st.caption("🔥 Popular in your feed:")
-            liked_tags = st.session_state.user_preferences["liked_tags"]
-            for tag in liked_tags[:5]:
-                if st.button(f"#{tag}", key=f"trend_{tag}", use_container_width=True):
-                    st.session_state.filter_tag = tag
-                    st.rerun()
-        
-        if st.session_state.search_history:
-            st.caption("🔍 Recent searches:")
-            for search in st.session_state.search_history[-5:]:
-                st.caption(f"• {search}")
-        
-        st.divider()
-        
-        st.markdown("#### 🧠 AI Learning")
-        st.markdown(f'<span class="learning-badge">🟢 Active Learning</span>', unsafe_allow_html=True)
-        st.caption("Every interaction makes me smarter!")
-        
-        if "user_preferences" in st.session_state:
-            pref = st.session_state.user_preferences
-            tags_liked = pref.get("liked_tags", [])
-            watch_count = len(pref.get("watch_history", []))
-            st.metric("🎯 Tags Learned", len(tags_liked))
-            st.metric("📊 Interactions", watch_count)
+        if st.button("🏠 Back to Home Grid", use_container_width=True):
+            st.session_state.view_mode = "home"
+            st.session_state.current_video = None
+            st.rerun()
         
         st.divider()
         st.caption("💡 I learn from your likes and skips!")
@@ -1487,12 +1319,10 @@ def main():
     
     search_col1, search_col2, search_col3 = st.columns([5, 1, 1])
     with search_col1:
-        # CRITICAL FIX: ONLY keep "Nigeria tech innovation" if there is zero search history
-        # Otherwise, leave it empty so users can type whatever they want globally.
-        default_search = "Search for ANY video globally" if not st.session_state.search_history else ""
+        default_search = "Nigeria tech innovation" if not st.session_state.search_history else ""
         search_query = st.text_input(
             "",
-            placeholder="🔍 Search for ANY video globally... (e.g., AI, Cooking, Space, Motivation)",
+            placeholder="🔍 Search for ANY video globally...",
             value=default_search,
             label_visibility="collapsed"
         )
@@ -1506,91 +1336,20 @@ def main():
     # ============================================================
     # INTELLIGENT DATA FETCHING LOGIC
     # ============================================================
-    # 1. If "Surprise Me" is clicked, search for a random mix
     if surprise_clicked:
-        st.session_state.surprise_me = True
         search_query = random.choice([
             "AI in Africa", "Afrofuturism", "Tech innovation Nigeria", 
-            "Gospel music 2026", "African startups", "Future of AI",
-            "Space exploration", "Coding tutorials", "Motivation"
+            "Gospel music 2026", "African startups", "Future of AI"
         ])
-        st.session_state.initialized = True # Mark as initialized so it remembers state
+        st.session_state.initialized = True
     
-    # 2. If search is clicked, use the search query
     elif search_clicked:
         st.session_state.search_triggered = True
         st.session_state.initialized = True
     
-    # 3. If it's the very first load (initialized is False), force a Surprise/Vibrant search
     elif not st.session_state.initialized:
         search_query = random.choice(["African Tech Revolution", "Faith & Innovation", "Future of Africa"])
-        st.session_state.initialized = True # Prevent this from running again on refresh
-    
-    # ============================================================
-    # QUICK FILTERS
-    # ============================================================
-    st.markdown("---")
-    st.markdown("#### 🏷️ Quick Filters")
-    
-    filter_cols = st.columns(5)
-    
-    with filter_cols[0]:
-        if st.button("📱 All", use_container_width=True):
-            st.session_state.filter_tag = None
-            st.rerun()
-    with filter_cols[1]:
-        if st.button("💻 Tech", use_container_width=True):
-            st.session_state.filter_tag = "tech"
-            st.rerun()
-    with filter_cols[2]:
-        if st.button("🙏 Faith", use_container_width=True):
-            st.session_state.filter_tag = "faith"
-            st.rerun()
-    with filter_cols[3]:
-        if st.button("🌍 Africa", use_container_width=True):
-            st.session_state.filter_tag = "africa"
-            st.rerun()
-    with filter_cols[4]:
-        if st.button("🚀 Future", use_container_width=True):
-            st.session_state.filter_tag = "future"
-            st.rerun()
-    
-    if "filter_tag" in st.session_state and st.session_state.filter_tag:
-        st.caption(f"🔍 Filter active: **{st.session_state.filter_tag}**")
-    
-    filter_tag = st.session_state.get("filter_tag", None)
-    st.markdown("---")
-    
-    # ============================================================
-    # ADVANCED SEARCH
-    # ============================================================
-    with st.expander("🔍 Advanced Search Options"):
-        col1, col2, col3 = st.columns(3)
-        
-        with col1:
-            upload_date = st.selectbox(
-                "📅 Upload Date",
-                ["Any time", "Last hour", "Today", "This week", "This month", "This year"],
-                key="upload_date_filter"
-            )
-        
-        with col2:
-            sort_by = st.selectbox(
-                "📊 Sort by",
-                ["Relevance", "View count", "Upload date", "Rating"],
-                key="sort_by_filter"
-            )
-        
-        with col3:
-            video_duration = st.selectbox(
-                "⏱️ Duration",
-                ["Any duration", "Short (< 4 min)", "Medium (4-20 min)", "Long (> 20 min)"],
-                key="duration_filter"
-            )
-        
-        if st.button("🔍 Apply Advanced Filters", use_container_width=True, type="secondary"):
-            st.session_state.apply_filters = True
-            st.rerun()
+        st.session_state.initialized = True
     
     # ============================================================
     # FETCH REAL DATA
@@ -1601,20 +1360,12 @@ def main():
         st.stop()
     
     progress_placeholder = st.empty()
-    
     with progress_placeholder.container():
         st.markdown(f"""
         <div class="progress-container">
-            <div class="progress-label">
-                <span>🔄 Fetching videos</span>
-                <span class="highlight">Searching {platform}...</span>
-            </div>
-            <div class="progress-track">
-                <div class="progress-fill" style="width: 45%;"></div>
-            </div>
-            <div class="progress-percent">
-                <span class="number">45%</span> · Connecting to API
-            </div>
+            <div class="progress-label"><span>🔄 Fetching videos</span><span class="highlight">Searching {platform}...</span></div>
+            <div class="progress-track"><div class="progress-fill" style="width: 45%;"></div></div>
+            <div class="progress-percent"><span class="number">45%</span> · Connecting to API</div>
         </div>
         """, unsafe_allow_html=True)
         time.sleep(0.5)
@@ -1622,16 +1373,9 @@ def main():
     with st.spinner(""):
         progress_placeholder.markdown(f"""
         <div class="progress-container">
-            <div class="progress-label">
-                <span>🔄 Fetching videos</span>
-                <span class="highlight">Searching...</span>
-            </div>
-            <div class="progress-track">
-                <div class="progress-fill" style="width: 60%;"></div>
-            </div>
-            <div class="progress-percent">
-                <span class="number">60%</span> · Searching {platform}
-            </div>
+            <div class="progress-label"><span>🔄 Fetching videos</span><span class="highlight">Searching...</span></div>
+            <div class="progress-track"><div class="progress-fill" style="width: 60%;"></div></div>
+            <div class="progress-percent"><span class="number">60%</span> · Searching {platform}</div>
         </div>
         """, unsafe_allow_html=True)
         time.sleep(0.3)
@@ -1642,42 +1386,26 @@ def main():
                 platforms = ["tiktok", "instagram", "facebook", "x", "youtube"]
                 video_df = search_juicer_live(search_query, platforms, max_results=25)
                 if video_df.empty:
-                    st.info("📢 No results from Juicer. Falling back to YouTube.")
-                    video_df = search_youtube_live(None, search_query, max_results=25, upload_date=upload_date, sort_by=sort_by, duration=video_duration)
+                    video_df = search_youtube_live(None, search_query, max_results=25)
             else:
-                st.warning("⚠️ Juicer API key not found. Using YouTube only.")
-                video_df = search_youtube_live(None, search_query, max_results=25, upload_date=upload_date, sort_by=sort_by, duration=video_duration)
+                video_df = search_youtube_live(None, search_query, max_results=25)
         else:
-            video_df = search_youtube_live(None, search_query, max_results=25, upload_date=upload_date, sort_by=sort_by, duration=video_duration)
+            video_df = search_youtube_live(None, search_query, max_results=25)
         
         progress_placeholder.markdown(f"""
         <div class="progress-container">
-            <div class="progress-label">
-                <span>🔄 Fetching videos</span>
-                <span class="highlight">Processing results...</span>
-            </div>
-            <div class="progress-track">
-                <div class="progress-fill" style="width: 80%;"></div>
-            </div>
-            <div class="progress-percent">
-                <span class="number">80%</span> · Processing video data
-            </div>
+            <div class="progress-label"><span>🔄 Fetching videos</span><span class="highlight">Processing results...</span></div>
+            <div class="progress-track"><div class="progress-fill" style="width: 80%;"></div></div>
+            <div class="progress-percent"><span class="number">80%</span> · Processing video data</div>
         </div>
         """, unsafe_allow_html=True)
         time.sleep(0.3)
         
         progress_placeholder.markdown(f"""
         <div class="progress-container">
-            <div class="progress-label">
-                <span>🔄 Fetching videos</span>
-                <span class="highlight">Almost ready...</span>
-            </div>
-            <div class="progress-track">
-                <div class="progress-fill" style="width: 95%;"></div>
-            </div>
-            <div class="progress-percent">
-                <span class="number">95%</span> · Finalizing
-            </div>
+            <div class="progress-label"><span>🔄 Fetching videos</span><span class="highlight">Almost ready...</span></div>
+            <div class="progress-track"><div class="progress-fill" style="width: 95%;"></div></div>
+            <div class="progress-percent"><span class="number">95%</span> · Finalizing</div>
         </div>
         """, unsafe_allow_html=True)
         time.sleep(0.3)
@@ -1689,456 +1417,189 @@ def main():
         st.stop()
     
     # ============================================================
-    # INITIALIZE ENGINE
+    # ✅ STEP 2 IMPLEMENTATION: HOME GRID VS WATCH MODE
     # ============================================================
-    engine = SmartRecommendationEngine(video_df, st.session_state.user_preferences)
     
-    # ============================================================
-    # SESSION STATE (Current Video)
-    # ============================================================
-    if "current_video" not in st.session_state or st.session_state.get("search_triggered", False):
-        if len(video_df) > 0:
-            st.session_state.current_video = video_df.iloc[0]["video_id"]
-        st.session_state.search_triggered = False
-    
-    current_video_exists = st.session_state.current_video in video_df["video_id"].values
-    if not current_video_exists and len(video_df) > 0:
-        st.session_state.current_video = video_df.iloc[0]["video_id"]
-    
-    # ============================================================
-    # DISPLAY CURRENT VIDEO - WITH BIGGER PREVIEW
-    # ============================================================
-    current_row = video_df[video_df["video_id"] == st.session_state.current_video]
-    if current_row.empty:
-        st.session_state.current_video = video_df.iloc[0]["video_id"]
-        current_row = video_df[video_df["video_id"] == st.session_state.current_video]
-    
-    current = current_row.iloc[0]
-    
-    engine.update_user_preferences("watch", current)
-    save_user_preferences(st.session_state.user_preferences)
-    
-    st.markdown("---")
-    
-    platform_source = current.get("platform", "YouTube")
-    st.success(f"✅ Found {len(video_df)} videos about '{search_query}' from {platform_source}")
-    
-    # ===== BIG PREVIEW (Full Width) =====
-    if show_preview and current.get('embed_url') and current['embed_url']:
-        if "youtube.com" in current['embed_url']:
-            st.markdown(f"""
-            <div class="preview-container">
-                <iframe src="{current['embed_url']}?autoplay=0&rel=0" 
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                        allowfullscreen>
-                </iframe>
-            </div>
-            <div class="preview-label">🎬 Preview · Click play to watch a short preview</div>
-            """, unsafe_allow_html=True)
-        else:
-            st.info(f"📱 Content from {platform_source} - Click 'Watch' button to view")
-    
-    # ===== Video Info (Below Preview) =====
-    col_left, col_right = st.columns([2.2, 1])
-    
-    with col_left:
-        if not show_preview and current.get('thumbnail_hq') and current['thumbnail_hq']:
-            st.markdown(f"""
-            <div class="video-card">
-                <img src="{current['thumbnail_hq']}" class="video-thumbnail" alt="Video thumbnail">
-                <div class="video-info">
-            """, unsafe_allow_html=True)
-        elif show_preview:
-            st.markdown(f"""
-            <div class="video-card">
-                <div class="video-info">
-            """, unsafe_allow_html=True)
-        else:
-            st.markdown(f"""
-            <div class="video-card">
-                <div class="video-info">
-            """, unsafe_allow_html=True)
-        
-        platform_badge = current.get("platform", "YouTube")
-        st.markdown(f"""
-                <div style="display:inline-block; background: {colors["accent"]}30; color: {colors["accent"]}; padding:4px 16px; border-radius:20px; font-size:0.7rem; margin-bottom:10px;">
-                    📱 {platform_badge}
-                </div>
-                <div class="video-title-text">{current['title']}</div>
-                <div class="video-channel">📺 <strong>{current['channel']}</strong> · {current.get('published', 'Recently')}</div>
-        """, unsafe_allow_html=True)
-        
-        if current.get('description') and current['description']:
-            synopsis = current['description'][:350]
-            if len(current['description']) > 350:
-                synopsis += "..."
-            st.markdown(f"""
-            <div class="synopsis-box">
-                <div class="synopsis-label">📖 Synopsis</div>
-                <div class="synopsis-text">{synopsis}</div>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        tags = current['tags'].split(", ")
-        tag_classes = {
-            "tech": "tag-tech", "faith": "tag-faith", "africa": "tag-africa",
-            "future": "tag-future", "fun": "tag-fun", "afrofuturism": "tag-tech",
-            "innovation": "tag-future", "christianity": "tag-faith", "ai": "tag-tech",
-            "robotics": "tag-tech", "inspiration": "tag-default", "motivation": "tag-default"
-        }
-        tag_html = '<div class="tags-container">'
-        for tag in tags:
-            cls = tag_classes.get(tag, "tag-default")
-            tag_html += f'<span class="tag {cls}">#{tag}</span>'
-        tag_html += '</div>'
-        st.markdown(tag_html, unsafe_allow_html=True)
-        
-        col1, col2, col3, col4 = st.columns(4)
-        with col1:
-            st.markdown(f"""
-            <div class="stat-box">
-                <div class="stat-number">{current['views']:,}</div>
-                <div class="stat-label">Views</div>
-            </div>
-            """, unsafe_allow_html=True)
-        with col2:
-            st.markdown(f"""
-            <div class="stat-box">
-                <div class="stat-number">❤️ {current['likes']:,}</div>
-                <div class="stat-label">Likes</div>
-            </div>
-            """, unsafe_allow_html=True)
-        with col3:
-            st.markdown(f"""
-            <div class="stat-box">
-                <div class="stat-number">🔄 {current['shares']:,}</div>
-                <div class="stat-label">Shares</div>
-            </div>
-            """, unsafe_allow_html=True)
-        with col4:
-            st.markdown(f"""
-            <div class="stat-box">
-                <div class="stat-number">{current['engagement_score']}%</div>
-                <div class="stat-label">Engagement</div>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        watch_label = f"▶️ Watch on {current.get('platform', 'YouTube')}"
-        st.markdown(f'<div style="margin-top:12px;"><a href="{current["youtube_url"]}" target="_blank" style="color:{colors["accent"]}; text-decoration:none; font-weight:600;">{watch_label}</a></div>', unsafe_allow_html=True)
-        st.markdown('</div></div>', unsafe_allow_html=True)
-    
-    with col_right:
-        st.markdown("### 📊 Content Analysis")
-        if current.get('is_futuristic', 0) == 1:
-            st.success("🚀 **Futuristic/Tech** (Boosted during day)")
-        if current.get('is_faith_based', 0) == 1:
-            st.info("🙏 **Faith/Community** (Boosted at night)")
-        if current.get('is_afrocentric', 0) == 1:
-            st.warning("🌍 **Afrocentric**")
-        
-        st.divider()
-        
-        st.markdown("### 📊 Your Analytics")
-        
-        history = st.session_state.user_preferences.get("watch_history", [])
-        if history:
-            liked_count = sum(1 for h in history if h.get("action") == "liked")
-            watched_count = sum(1 for h in history if h.get("action") == "watched")
-            skipped_count = sum(1 for h in history if h.get("action") == "skipped")
-            total_interactions = len(history)
-            engagement_rate = round((liked_count / total_interactions) * 100) if total_interactions > 0 else 0
-            
-            col_a, col_b = st.columns(2)
-            with col_a:
-                st.markdown(f"""
-                <div class="stat-box">
-                    <div class="stat-number">{liked_count}</div>
-                    <div class="stat-label">❤️ Liked</div>
-                </div>
-                """, unsafe_allow_html=True)
-            with col_b:
-                st.markdown(f"""
-                <div class="stat-box">
-                    <div class="stat-number">{engagement_rate}%</div>
-                    <div class="stat-label">📈 Engagement</div>
-                </div>
-                """, unsafe_allow_html=True)
-            
-            col_c, col_d = st.columns(2)
-            with col_c:
-                st.markdown(f"""
-                <div class="stat-box">
-                    <div class="stat-number">{watched_count}</div>
-                    <div class="stat-label">👀 Watched</div>
-                </div>
-                """, unsafe_allow_html=True)
-            with col_d:
-                st.markdown(f"""
-                <div class="stat-box">
-                    <div class="stat-number">{skipped_count}</div>
-                    <div class="stat-label">👎 Skipped</div>
-                </div>
-                """, unsafe_allow_html=True)
-            
-            st.progress(engagement_rate / 100, text=f"Engagement Rate: {engagement_rate}%")
-            
-            if st.session_state.user_preferences.get("liked_tags"):
-                st.caption(f"🎯 Favorite tags: {', '.join(st.session_state.user_preferences['liked_tags'][:5])}")
-        else:
-            st.info("No analytics yet. Start interacting with videos!")
-        
-        st.divider()
-        st.markdown("### 🧠 What I Know About You")
-        st.caption(f"✅ Learned {len(st.session_state.user_preferences.get('liked_tags', []))} content preferences")
-        
-        st.divider()
-        
-        st.markdown("### 🔗 Share This Video")
-        share_url = current.get("youtube_url", "")
-        if share_url:
-            st.code(share_url, language="text")
-            share_col1, share_col2, share_col3 = st.columns(3)
-            with share_col1:
-                if st.button("📋 Copy Link", use_container_width=True):
-                    st.toast("✅ Link copied to clipboard!", icon="📋")
-            with share_col2:
-                email_link = f"mailto:?subject=Check out this video&body={share_url}"
-                st.markdown(f'<a href="{email_link}" target="_blank" style="text-decoration:none;width:100%;display:block;"><button style="width:100%;padding:0.5rem;border-radius:30px;border:none;background:#4a90e2;color:white;font-weight:600;cursor:pointer;">📧 Email</button></a>', unsafe_allow_html=True)
-            with share_col3:
-                tweet_text = f"Check out this video: {current['title']}"
-                tweet_link = f"https://twitter.com/intent/tweet?text={tweet_text}&url={share_url}"
-                st.markdown(f'<a href="{tweet_link}" target="_blank" style="text-decoration:none;width:100%;display:block;"><button style="width:100%;padding:0.5rem;border-radius:30px;border:none;background:#1da1f2;color:white;font-weight:600;cursor:pointer;">🐦 Tweet</button></a>', unsafe_allow_html=True)
-        
-        st.divider()
-        st.markdown("### 💡 Pro Tip")
-        st.caption("The more you use the ❤️ and 👎 buttons, the smarter I get!")
-    
-    # ============================================================
-    # 🔥 VIBRANT HOMEPAGE FIX: DISPLAY TRENDING CAROUSEL HERE
-    # (Directly after the stats and "Watch on Youtube" link, 
-    # before the Feedback buttons. This completely fills the empty void).
-    # ============================================================
-    render_trending_carousel(video_df, title="🔥 Trending Now", max_items=8)
+    # If a video was selected via URL param, switch to watch mode
+    query_params = st.query_params
+    loaded_id_list = query_params.get("load_video")
+    if loaded_id_list and len(loaded_id_list) > 0:
+        st.session_state.current_video = loaded_id_list[0]
+        st.session_state.view_mode = "watch"
+        del query_params["load_video"]
+        st.rerun()
 
-    # ============================================================
-    # ACTION BUTTONS
-    # ============================================================
-    st.markdown("---")
-    st.markdown("#### 👇 Your feedback makes me smarter!")
-    
-    btn_cols = st.columns(5)
-    
-    with btn_cols[0]:
-        if st.button("❤️ Love It", use_container_width=True, type="primary"):
-            engine.update_user_preferences("like", current)
-            save_user_preferences(st.session_state.user_preferences)
-            st.balloons()
-            st.toast("🧠 I learned you like this! Getting smarter...", icon="❤️")
-    
-    with btn_cols[1]:
-        if st.button("👍 Interesting", use_container_width=True):
-            if "watch_history" not in st.session_state.user_preferences:
-                st.session_state.user_preferences["watch_history"] = []
-            st.session_state.user_preferences["watch_history"].append({
-                "title": current["title"],
-                "action": "liked",
-                "thumbnail": current.get("thumbnail", ""),
-                "video_id": current["video_id"],
-                "platform": current.get("platform", "Unknown"),
-                "timestamp": datetime.now().isoformat()
-            })
-            save_user_preferences(st.session_state.user_preferences)
-            st.toast("📝 Noted! I'll consider your preference.", icon="👍")
-    
-    with btn_cols[2]:
-        if st.button("👎 Not for me", use_container_width=True):
-            engine.update_user_preferences("skip", current)
-            save_user_preferences(st.session_state.user_preferences)
-            st.toast("🧠 I learned you don't like this. Won't show again!", icon="👎")
-    
-    with btn_cols[3]:
-        if st.button("⏩ Next Video", use_container_width=True, type="primary"):
-            current_index = video_df[video_df["video_id"] == current["video_id"]].index[0]
-            recs = engine.get_recommendations(
-                current_index,
-                num_recommendations=15,
-                time_of_day=mode,
-                filter_tag=filter_tag
-            )
-            if not recs.empty:
-                next_video_id = recs.iloc[0]["video_id"]
-                st.session_state.current_video = int(next_video_id)
-                st.rerun()
-    
-    with btn_cols[4]:
-        is_saved = current["video_id"] in st.session_state.watch_later
-        if st.button(
-            "📌 Save" if not is_saved else "✅ Saved",
-            use_container_width=True,
-            type="secondary" if not is_saved else "primary"
-        ):
-            if is_saved:
-                st.session_state.watch_later.remove(current["video_id"])
-                st.toast("🗑️ Removed from Watch Later!", icon="🗑️")
-            else:
-                st.session_state.watch_later.append(current["video_id"])
-                st.toast("📌 Saved to Watch Later!", icon="📌")
-            st.rerun()
-    
-    # ============================================================
-    # RECOMMENDATIONS GRID
-    # ============================================================
-    st.markdown("---")
-    st.markdown("### 📱 Recommended For You")
-    st.caption("AI-powered recommendations based on your preferences (Matches the current video)")
-    
-    current_index = video_df[video_df["video_id"] == current["video_id"]].index[0]
-    recommendations = engine.get_recommendations(
-        current_index,
-        num_recommendations=8,
-        time_of_day=mode,
-        filter_tag=filter_tag
-    )
-    
-    if recommendations.empty:
-        recommendations = video_df.sample(8)
-    
-    rec_cols = st.columns(4)
-    for idx, (_, row) in enumerate(recommendations.iterrows()):
-        with rec_cols[idx % 4]:
-            platform_tag = row.get("platform", "YouTube")
-            st.markdown(f"""
-            <div class="rec-card">
-                <img src="{row['thumbnail']}" class="rec-thumbnail" alt="Video thumbnail">
-                <div class="rec-info">
-                    <div class="rec-title">{row['title'][:55]}{'...' if len(row['title']) > 55 else ''}</div>
-                    <div class="rec-channel">📱 {platform_tag} · {row['channel'][:15]}</div>
-                    <div class="rec-score">🔥 {row['engagement_score']:.1f}% match</div>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-            if st.button(f"▶️ Watch", key=f"rec_{idx}"):
-                st.session_state.current_video = row["video_id"]
-                st.rerun()
-    
-    # ============================================================
-    # WATCH LATER
-    # ============================================================
-    if st.session_state.watch_later:
-        st.divider()
-        st.markdown("### 📌 Watch Later")
-        st.caption(f"You have {len(st.session_state.watch_later)} videos saved")
+    # 1. HOME MODE: Show a beautiful 4-column grid for discovery
+    if st.session_state.view_mode == "home":
+        st.markdown("### 🌍 Discover Trending Videos")
+        st.caption("Click any thumbnail below to start watching")
         
-        watch_later_df = video_df[video_df["video_id"].isin(st.session_state.watch_later)]
+        # Sort by views for trending homepage
+        trending_grid = video_df.sort_values(by="views", ascending=False).head(16)
         
-        if not watch_later_df.empty:
-            wl_cols = st.columns(4)
-            for idx, (_, row) in enumerate(watch_later_df.iterrows()):
-                with wl_cols[idx % 4]:
-                    st.markdown(f"""
-                    <div class="rec-card">
-                        <img src="{row['thumbnail']}" class="rec-thumbnail" alt="Video thumbnail">
-                        <div class="rec-info">
-                            <div class="rec-title">{row['title'][:55]}{'...' if len(row['title']) > 55 else ''}</div>
-                            <div class="rec-channel">📱 {row.get('platform', 'YouTube')} · {row['channel'][:15]}</div>
+        # Render Grid
+        cols = st.columns(4)
+        for idx, (_, row) in enumerate(trending_grid.iterrows()):
+            with cols[idx % 4]:
+                st.markdown(f"""
+                <div class="home-card" onclick="window.location.href='?load_video={row["video_id"]}'">
+                    <img src="{row['thumbnail']}" class="home-img" alt="Thumbnail">
+                    <div class="home-info">
+                        <div class="home-title">{row['title'][:60]}{'...' if len(row['title']) > 60 else ''}</div>
+                        <div class="home-channel">{row['channel']} · {row['platform']}</div>
+                        <div class="home-stats">
+                            <span class="home-views">👁️ {row['views']:,}</span>
+                            <span>❤️ {row['likes']:,}</span>
                         </div>
                     </div>
-                    """, unsafe_allow_html=True)
-                    if st.button(f"▶️ Watch", key=f"wl_{idx}"):
-                        st.session_state.current_video = row["video_id"]
-                        st.rerun()
-    
-    # ============================================================
-    # EXPORT & CLEAR HISTORY
-    # ============================================================
-    if st.session_state.user_preferences.get("watch_history"):
-        st.divider()
-        st.markdown("### 📁 History Management")
+                </div>
+                """, unsafe_allow_html=True)
+
+    # 2. WATCH MODE: Show the detailed Video Player
+    else:
+        engine = SmartRecommendationEngine(video_df, st.session_state.user_preferences)
         
-        col_exp1, col_exp2, col_exp3 = st.columns(3)
+        if "current_video" not in st.session_state or st.session_state.current_video not in video_df["video_id"].values:
+            st.session_state.current_video = video_df.iloc[0]["video_id"]
         
-        with col_exp1:
-            csv_data = export_watch_history()
-            if csv_data:
-                st.download_button(
-                    label="📥 Download History (CSV)",
-                    data=csv_data,
-                    file_name=f"watch_history_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
-                    mime="text/csv",
-                    use_container_width=True
-                )
+        current_row = video_df[video_df["video_id"] == st.session_state.current_video]
+        if current_row.empty:
+            st.session_state.current_video = video_df.iloc[0]["video_id"]
+            current_row = video_df[video_df["video_id"] == st.session_state.current_video]
         
-        with col_exp2:
-            if st.button("🔄 Reset Analytics", use_container_width=True):
-                st.session_state.user_preferences["liked_tags"] = []
-                st.session_state.user_preferences["skipped_ids"] = []
-                save_user_preferences(st.session_state.user_preferences)
-                st.toast("📊 Analytics reset!", icon="🔄")
-                st.rerun()
+        current = current_row.iloc[0]
+        engine.update_user_preferences("watch", current)
+        save_user_preferences(st.session_state.user_preferences)
         
-        with col_exp3:
-            if st.button("🗑️ Clear All History", use_container_width=True):
-                clear_all_history()
-                st.toast("🗑️ All history cleared!", icon="🗑️")
-                st.rerun()
-    
-    # ============================================================
-    # LEARNING VISUALIZATION
-    # ============================================================
-    with st.expander("🧠 How I'm Learning from You"):
-        st.markdown("""
-        ### 🔄 The Learning Loop
+        st.markdown("---")
+        platform_source = current.get("platform", "YouTube")
+        st.success(f"✅ Found {len(video_df)} videos about '{search_query}' from {platform_source}")
         
-        **1. You interact with content**
-        - ❤️ Love It → I learn what you like
-        - 👎 Not for me → I learn what to avoid
-        - ⏩ Next → I learn your viewing patterns
+        # == Big Preview ==
+        if show_preview and current.get('embed_url'):
+            if "youtube.com" in current['embed_url']:
+                st.markdown(f"""
+                <div class="preview-container">
+                    <iframe src="{current['embed_url']}?autoplay=0&rel=0" allowfullscreen></iframe>
+                </div>
+                <div class="preview-label">🎬 Preview · Click play to watch a short preview</div>
+                """, unsafe_allow_html=True)
+            else:
+                st.info(f"📱 Content from {platform_source}")
         
-        **2. I update your preferences**
-        - Track favorite tags and topics
-        - Remember what you've watched
-        - Adapt to your time-of-day patterns
+        # == Video Info ==
+        col_left, col_right = st.columns([2.2, 1])
+        with col_left:
+            st.markdown(f"""
+            <div class="video-card">
+                <div style="display:inline-block; background: {colors["accent"]}30; color: {colors["accent"]}; padding:4px 16px; border-radius:20px; font-size:0.7rem; margin: 10px 0 0 15px;">📱 {platform_source}</div>
+                <div style="padding: 0 15px 15px 15px;">
+                    <div class="video-title-text">{current['title']}</div>
+                    <div class="video-channel">📺 <strong>{current['channel']}</strong> · {current.get('published', 'Recently')}</div>
+            """, unsafe_allow_html=True)
+            
+            if current.get('description'):
+                synopsis = current['description'][:350] + ('...' if len(current['description']) > 350 else '')
+                st.markdown(f"""
+                <div class="synopsis-box">
+                    <div class="synopsis-label">📖 Synopsis</div>
+                    <div class="synopsis-text">{synopsis}</div>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            tags = current['tags'].split(", ")
+            tag_html = '<div class="tags-container">'
+            for tag in tags:
+                cls = tag_classes.get(tag, "tag-default")
+                tag_html += f'<span class="tag {cls}">#{tag}</span>'
+            tag_html += '</div>'
+            st.markdown(tag_html, unsafe_allow_html=True)
+            
+            col1, col2, col3, col4 = st.columns(4)
+            with col1: st.markdown(f'<div class="stat-box"><div class="stat-number">{current["views"]:,}</div><div class="stat-label">Views</div></div>', unsafe_allow_html=True)
+            with col2: st.markdown(f'<div class="stat-box"><div class="stat-number">❤️ {current["likes"]:,}</div><div class="stat-label">Likes</div></div>', unsafe_allow_html=True)
+            with col3: st.markdown(f'<div class="stat-box"><div class="stat-number">🔄 {current["shares"]:,}</div><div class="stat-label">Shares</div></div>', unsafe_allow_html=True)
+            with col4: st.markdown(f'<div class="stat-box"><div class="stat-number">{current["engagement_score"]}%</div><div class="stat-label">Engagement</div></div>', unsafe_allow_html=True)
+            
+            st.markdown(f'<div style="margin-top:12px;"><a href="{current["youtube_url"]}" target="_blank" style="color:{colors["accent"]}; text-decoration:none; font-weight:600;">▶️ Watch on YouTube</a></div>', unsafe_allow_html=True)
+            st.markdown('</div></div>', unsafe_allow_html=True)
         
-        **3. Recommendations get smarter**
-        - Content-based matching
-        - Preference-based boosting
-        - Time-aware personalization
-        
-        **4. The cycle continues**
-        - Every interaction makes me smarter
-        - Recommendations become more personalized
-        - You discover new, relevant content
-        """)
-        
-        if st.session_state.user_preferences.get("watch_history"):
+        with col_right:
+            st.markdown("### 📊 Content Analysis")
+            if current.get('is_futuristic', 0) == 1: st.success("🚀 **Futuristic/Tech**")
+            if current.get('is_faith_based', 0) == 1: st.info("🙏 **Faith/Community**")
+            if current.get('is_afrocentric', 0) == 1: st.warning("🌍 **Afrocentric**")
+            
             st.divider()
-            st.markdown("### 📊 Your Learning Journey")
-            st.caption("Every interaction is tracked here - this is how I learn from you!")
+            st.markdown("### 🔗 Share This Video")
+            share_url = current.get("youtube_url", "")
+            st.code(share_url, language="text")
             
-            history = st.session_state.user_preferences["watch_history"][-15:]
-            
-            for item in reversed(history):
-                action_emoji = {
-                    "liked": "❤️",
-                    "skipped": "👎",
-                    "watched": "👀"
-                }.get(item.get("action", "watched"), "👀")
-                
-                thumbnail = item.get("thumbnail", "")
-                title = item.get("title", "Unknown video")
-                platform = item.get("platform", "Unknown")
-                
-                col1, col2, col3 = st.columns([1, 6, 1])
-                with col1:
-                    if thumbnail:
-                        st.image(thumbnail, width=60)
-                    else:
-                        st.write("🎬")
-                with col2:
-                    st.write(f"**{title[:60]}{'...' if len(title) > 60 else ''}**")
-                with col3:
-                    st.write(f"{action_emoji} {platform}")
-                st.divider()
+            st.divider()
+            st.markdown("### 💡 Pro Tip")
+            st.caption("The more you use the ❤️ and 👎 buttons, the smarter I get!")
+        
+        # == Trending Carousel (Inserted before feedback) ==
+        render_trending_carousel(video_df, title="🔥 Trending Now", max_items=8)
+        
+        # == Feedback Buttons ==
+        st.markdown("---")
+        st.markdown("#### 👇 Your feedback makes me smarter!")
+        btn_cols = st.columns(5)
+        with btn_cols[0]:
+            if st.button("❤️ Love It", use_container_width=True, type="primary"):
+                engine.update_user_preferences("like", current)
+                save_user_preferences(st.session_state.user_preferences)
+                st.balloons()
+                st.toast("🧠 Learned!", icon="❤️")
+        with btn_cols[1]:
+            if st.button("👍 Interesting", use_container_width=True):
+                st.session_state.user_preferences["watch_history"].append({"title": current["title"], "action": "liked", "video_id": current["video_id"]})
+                save_user_preferences(st.session_state.user_preferences)
+                st.toast("📝 Noted!", icon="👍")
+        with btn_cols[2]:
+            if st.button("👎 Not for me", use_container_width=True):
+                engine.update_user_preferences("skip", current)
+                save_user_preferences(st.session_state.user_preferences)
+                st.toast("🧠 Skipped!", icon="👎")
+        with btn_cols[3]:
+            if st.button("⏩ Next", use_container_width=True, type="primary"):
+                recs = engine.get_recommendations(video_df[video_df["video_id"] == current["video_id"]].index[0], num_recommendations=15, time_of_day=mode, filter_tag=filter_tag)
+                if not recs.empty:
+                    st.session_state.current_video = recs.iloc[0]["video_id"]
+                    st.rerun()
+        with btn_cols[4]:
+            is_saved = current["video_id"] in st.session_state.watch_later
+            if st.button("📌 Save" if not is_saved else "✅ Saved", use_container_width=True, type="secondary" if not is_saved else "primary"):
+                if is_saved: st.session_state.watch_later.remove(current["video_id"])
+                else: st.session_state.watch_later.append(current["video_id"])
+                st.rerun()
+        
+        # == Recommended Grid ==
+        st.markdown("---")
+        st.markdown("### 📱 Recommended For You")
+        st.caption("AI-powered recommendations based on your preferences")
+        
+        current_index = video_df[video_df["video_id"] == current["video_id"]].index[0]
+        recommendations = engine.get_recommendations(current_index, num_recommendations=8, time_of_day=mode, filter_tag=filter_tag)
+        if recommendations.empty: recommendations = video_df.sample(8)
+        
+        rec_cols = st.columns(4)
+        for idx, (_, row) in enumerate(recommendations.iterrows()):
+            with rec_cols[idx % 4]:
+                st.markdown(f"""
+                <div class="rec-card">
+                    <img src="{row['thumbnail']}" style="width:100%; aspect-ratio:16/9; object-fit:cover; border-radius:14px 14px 0 0;">
+                    <div style="padding:10px;">
+                        <div class="rec-title">{row['title'][:55]}{'...' if len(row['title']) > 55 else ''}</div>
+                        <div class="rec-channel">📱 {row.get('platform', 'YouTube')} · {row['channel'][:15]}</div>
+                        <div class="rec-score">🔥 {row['engagement_score']:.1f}% match</div>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+                if st.button(f"▶️ Watch", key=f"rec_{idx}"):
+                    st.session_state.current_video = row["video_id"]
+                    st.rerun()
 
 
 # ============================================================
