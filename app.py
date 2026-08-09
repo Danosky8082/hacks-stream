@@ -928,7 +928,7 @@ def render_trending_carousel(video_df, title="🔥 Trending Now", max_items=8):
             st.rerun()
 
 # ============================================================
-# MAIN APP (FIXED UNDEFINED VARIABLE ERRORS)
+# MAIN APP (FIXED ERROR HANDLING)
 # ============================================================
 
 def main():
@@ -1435,6 +1435,11 @@ def main():
     
     if video_df.empty:
         st.error("❌ No videos found. Please try a different search term.")
+        
+        # Add a manual refresh button so you don't have to reload the browser
+        if st.button("🔄 Try Again (Quota reset)"):
+            st.rerun()
+        st.info("💡 Your API quota may be exhausted. Wait until midnight PST for it to reset, or add more keys to your .env file.")
         st.stop()
     
     # ============================================================
