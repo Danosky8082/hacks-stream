@@ -1,5 +1,5 @@
 # app.py - AfroFuture Stream V7
-# COMPLETE UPGRADE WITH JUICER MULTI-PLATFORM SUPPORT
+# COMPLETE UPGRADE WITH JUICER MULTI-PLATFORM SUPPORT & VIBRANT HOMEPAGE
 # Faith · Technology · African Innovation
 
 import pandas as pd
@@ -740,6 +740,51 @@ class SmartRecommendationEngine:
 
 
 # ============================================================
+# RENDER FUNCTIONS (Fixes The Empty Space)
+# ============================================================
+
+def render_trending_grid(video_df, title="🔥 Trending Now", max_items=12):
+    """
+    Renders a vibrant grid of video thumbnails.
+    This fills the empty space between the search bar and the feedback bar.
+    """
+    if video_df.empty:
+        return
+
+    st.markdown(f"### {title}")
+    st.caption("Discover the most engaging videos right now")
+
+    # Sort by engagement score to show "Trending" stuff
+    trending_df = video_df.sort_values(by="engagement_score", ascending=False).head(max_items)
+
+    # 4 columns for desktop, 2 for mobile
+    cols = st.columns(4)
+    
+    for idx, (_, row) in enumerate(trending_df.iterrows()):
+        with cols[idx % 4]:
+            # Card styling integrated into HTML for scroll-and-click vibrancy
+            st.markdown(f"""
+            <div style="background: rgba(20, 20, 40, 0.8); border-radius: 12px; overflow: hidden; 
+                        border: 1px solid rgba(255,255,255,0.05); margin-bottom: 12px; cursor: pointer;
+                        transition: transform 0.2s ease, box-shadow 0.2s ease;">
+                <img src="{row['thumbnail']}" style="width:100%; aspect-ratio: 16/9; object-fit:cover; display:block;">
+                <div style="padding: 8px 10px 12px 10px;">
+                    <div style="font-weight:600; font-size:0.8rem; color:#ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                        {row['title'][:50]}{'...' if len(row['title']) > 50 else ''}
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px;">
+                        <span style="font-size:0.65rem; color:#999;">{row['channel'][:15]}</span>
+                        <span style="font-size:0.65rem; color:#f0c040; font-weight:700;">🔥 {row['engagement_score']:.0f}%</span>
+                    </div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            if st.button(f"▶️ Watch", key=f"trending_btn_{idx}"):
+                st.session_state.current_video = row["video_id"]
+                st.rerun()
+
+# ============================================================
 # MAIN APP
 # ============================================================
 
@@ -769,6 +814,10 @@ def main():
     if "theme" not in st.session_state:
         st.session_state.theme = "Dark"
     
+    # FIX: Initialize the app so it doesn't revert to default search on refresh
+    if "initialized" not in st.session_state:
+        st.session_state.initialized = False
+        
     loaded_prefs = load_user_preferences()
     if loaded_prefs:
         for key in ["liked_tags", "skipped_ids", "watch_history"]:
@@ -813,8 +862,6 @@ def main():
     
     theme = st.session_state.theme
     colors = theme_colors.get(theme, theme_colors["Dark"])
-    
-    search_query = "Nigeria tech innovation"
     
     # ============================================================
     # HEADER - Mobile Optimized
@@ -1260,11 +1307,6 @@ def main():
         # ===== TRENDING TOPICS =====
         st.markdown("#### 📈 Trending Topics")
         
-        if search_query and search_query not in st.session_state.search_history:
-            st.session_state.search_history.append(search_query)
-            if len(st.session_state.search_history) > 10:
-                st.session_state.search_history = st.session_state.search_history[-10:]
-        
         if st.session_state.user_preferences.get("liked_tags"):
             st.caption("🔥 Popular in your feed:")
             liked_tags = st.session_state.user_preferences["liked_tags"]
@@ -1302,10 +1344,12 @@ def main():
     
     search_col1, search_col2, search_col3 = st.columns([5, 1, 1])
     with search_col1:
+        # If the app hasn't been initialized, leave search empty to force "Surprise Me" logic later
+        default_search = "" if not st.session_state.initialized else "Nigeria tech innovation"
         search_query = st.text_input(
             "",
             placeholder="🔍 Search for videos... (e.g., AI in Africa, Christian Tech, Afrofuturism)",
-            value="Nigeria tech innovation",
+            value=default_search,
             label_visibility="collapsed"
         )
     with search_col2:
@@ -1315,13 +1359,28 @@ def main():
     
     st.markdown('</div></div>', unsafe_allow_html=True)
     
+    # ============================================================
+    # INTELLIGENT DATA FETCHING LOGIC
+    # ============================================================
+    # 1. If "Surprise Me" is clicked, search for a random mix
     if surprise_clicked:
         st.session_state.surprise_me = True
-        st.rerun()
+        # Set a random, engaging search to make the homepage vibrant
+        search_query = random.choice([
+            "AI in Africa", "Afrofuturism", "Tech innovation Nigeria", 
+            "Gospel music 2026", "African startups", "Future of AI"
+        ])
+        st.session_state.initialized = True # Mark as initialized so it remembers state
     
-    if search_clicked:
+    # 2. If search is clicked, use the search query
+    elif search_clicked:
         st.session_state.search_triggered = True
-        st.rerun()
+        st.session_state.initialized = True
+    
+    # 3. If it's the very first load (initialized is False), force a Surprise/Vibrant search
+    elif not st.session_state.initialized:
+        search_query = random.choice(["African Tech Revolution", "Faith & Innovation", "Future of Africa"])
+        st.session_state.initialized = True # Prevent this from running again on refresh
     
     # ============================================================
     # QUICK FILTERS
@@ -1491,7 +1550,7 @@ def main():
     engine = SmartRecommendationEngine(video_df, st.session_state.user_preferences)
     
     # ============================================================
-    # SESSION STATE
+    # SESSION STATE (Current Video)
     # ============================================================
     if "current_video" not in st.session_state or st.session_state.get("search_triggered", False):
         if len(video_df) > 0:
@@ -1502,6 +1561,12 @@ def main():
     if not current_video_exists and len(video_df) > 0:
         st.session_state.current_video = video_df.iloc[0]["video_id"]
     
+    # ============================================================
+    # 🌟 VIBRANT HOMEPAGE FIX: DISPLAY TRENDING GRID ABOVE THE FEEDBACK BAR
+    # ============================================================
+    # This renders the thumbnails immediately after search, filling the "empty void"
+    render_trending_grid(video_df, title="🔥 Trending Now", max_items=12)
+
     # ============================================================
     # DISPLAY CURRENT VIDEO - WITH BIGGER PREVIEW
     # ============================================================
