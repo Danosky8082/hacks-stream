@@ -928,7 +928,7 @@ def render_trending_carousel(video_df, title="🔥 Trending Now", max_items=8):
             st.rerun()
 
 # ============================================================
-# MAIN APP (FIXED VIDEO LOADING & DEFAULT SEARCH TEXT)
+# MAIN APP (FIXED REACT ERROR & HOME GRID)
 # ============================================================
 
 def main():
@@ -1097,7 +1097,15 @@ def main():
         }}
         .search-btn:hover {{ transform: scale(1.03); box-shadow: 0 8px 30px rgba(240, 192, 64, 0.3); }}
         
-        /* ===== HOME GRID CARDS ===== */
+        /* ===== HOME GRID CARDS (Safely handled via buttons) ===== */
+        .home-btn-wrapper {{
+            background: transparent !important;
+            border: none !important;
+            padding: 0 !important;
+            margin-bottom: 15px;
+            width: 100%;
+            text-align: left;
+        }}
         .home-card {{
             background: rgba(20, 20, 40, 0.85);
             border-radius: 16px;
@@ -1105,7 +1113,7 @@ def main():
             overflow: hidden;
             transition: transform 0.2s ease, box-shadow 0.2s ease;
             cursor: pointer;
-            margin-bottom: 15px;
+            width: 100%;
         }}
         .home-card:hover {{
             transform: translateY(-5px);
@@ -1437,17 +1445,29 @@ def main():
     # 1. HOME MODE: Show a beautiful 4-column grid for discovery
     if st.session_state.view_mode == "home":
         st.markdown("### 🌍 Discover Trending Videos")
-        st.caption("Click any thumbnail below to start watching")
+        st.caption("Click any card below to start watching")
         
         # Sort by views for trending homepage
         trending_grid = video_df.sort_values(by="views", ascending=False).head(16)
         
-        # Render Grid
+        # Render Grid using native buttons to avoid React onClick errors
         cols = st.columns(4)
         for idx, (_, row) in enumerate(trending_grid.iterrows()):
             with cols[idx % 4]:
+                # We wrap the HTML card inside a native Streamlit button
+                if st.button(
+                    label="Load Video", 
+                    key=f"home_card_{idx}",
+                    use_container_width=True,
+                    type="secondary"
+                ):
+                    st.session_state.current_video = row["video_id"]
+                    st.session_state.view_mode = "watch"
+                    st.rerun()
+                
+                # Render the beautiful card HTML immediately after the invisible button
                 st.markdown(f"""
-                <div class="home-card" onclick="window.location.href='?load_video={row["video_id"]}'">
+                <div class="home-card" style="margin-top: -55px; position: relative; z-index: -1;">
                     <img src="{row['thumbnail']}" class="home-img" alt="Thumbnail">
                     <div class="home-info">
                         <div class="home-title">{row['title'][:60]}{'...' if len(row['title']) > 60 else ''}</div>
