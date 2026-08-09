@@ -89,28 +89,28 @@ def search_juicer_live(query, platforms, max_results=25):
             st.warning("⚠️ No feed ID available")
             return pd.DataFrame()
         
-        # ===== STEP 2: ROBUST SOURCE MANAGEMENT =====
-        # Get current sources so we don't delete the wrong one
+        # ===== STEP 2: FORCE CLEAR ALL EXISTING SOURCES =====
+        # We must delete the old Facebook sources so we can add a fresh one
+        st.info("🧹 Clearing old sources to prevent conflicts...")
         sources_response = requests.get(
             f"https://api.juicer.io/v1/feeds/{feed_id}/sources",
             headers=headers,
             timeout=30
         )
         
-        existing_source_found = False
         if sources_response.status_code == 200:
             sources_data = sources_response.json()
             sources = sources_data.get("data", [])
-            
-            # Check if the source we want already exists
             for source in sources:
-                source_platform = source.get("platform", "").lower()
-                source_term = source.get("term", "").lower()
-                if source_platform in [p.lower() for p in platforms] and source_term == query.lower():
-                    existing_source_found = True
-                    break
-        
-        # ===== STEP 3: Add sources (Only if it doesn't already exist) =====
+                source_id = source.get("id")
+                if source_id:
+                    requests.delete(
+                        f"https://api.juicer.io/v1/feeds/{feed_id}/sources/{source_id}",
+                        headers=headers
+                    )
+                    time.sleep(0.5) # Give it a moment to delete properly
+
+        # ===== STEP 3: Add sources with EXACT platform names =====
         exact_platform_names = {
             "youtube": "YouTube", "tiktok": "TikTok", "instagram": "Instagram",
             "facebook": "Facebook", "twitter": "Twitter", "linkedin": "LinkedIn"
@@ -118,57 +118,52 @@ def search_juicer_live(query, platforms, max_results=25):
         
         added_sources = []
         
-        # If the source already exists, we skip adding it to avoid "Could not add Facebook" errors
-        if not existing_source_found:
-            for platform in platforms:
-                platform_lower = platform.lower()
-                exact_name = exact_platform_names.get(platform_lower, platform)
-                
-                term_types = ["hashtag", "search", "username"]
-                source_added = False
-                
-                for term_type in term_types:
-                    if source_added:
-                        break
-                        
-                    source_payload = {
-                        "platform": exact_name,
-                        "term": query,
-                        "term_type": term_type
-                    }
+        for platform in platforms:
+            platform_lower = platform.lower()
+            exact_name = exact_platform_names.get(platform_lower, platform)
+            
+            term_types = ["hashtag", "search", "username"]
+            source_added = False
+            
+            for term_type in term_types:
+                if source_added:
+                    break
                     
-                    source_response = requests.post(
-                        f"https://api.juicer.io/v1/feeds/{feed_id}/sources",
-                        headers=headers,
-                        json=source_payload,
-                        timeout=30
-                    )
-                    
-                    if source_response.status_code == 201:
-                        added_sources.append(exact_name)
-                        st.info(f"✅ Added {exact_name} (term_type: {term_type})")
-                        source_added = True
-                        time.sleep(0.5)
-                    elif source_response.status_code == 422:
-                        continue
-                    else:
-                        break
+                source_payload = {
+                    "platform": exact_name,
+                    "term": query,
+                    "term_type": term_type
+                }
                 
-                if not source_added:
-                    st.warning(f"⚠️ Could not add {exact_name}")
-        else:
-            st.info(f"✅ Source already exists for {', '.join(platforms)}. Skipping add step.")
+                source_response = requests.post(
+                    f"https://api.juicer.io/v1/feeds/{feed_id}/sources",
+                    headers=headers,
+                    json=source_payload,
+                    timeout=30
+                )
+                
+                if source_response.status_code == 201:
+                    added_sources.append(exact_name)
+                    st.info(f"✅ Added {exact_name} (term_type: {term_type})")
+                    source_added = True
+                    time.sleep(0.5)
+                elif source_response.status_code == 422:
+                    # Try the next term_type if 422 (Unprocessable Entity)
+                    continue
+                else:
+                    # Break if there is a hard error like 500 or 404
+                    break
+            
+            if not source_added:
+                st.warning(f"⚠️ Could not add {exact_name}. Try a different search term.")
 
-        if not added_sources and not existing_source_found:
+        if not added_sources:
             st.warning("⚠️ Could not add any sources. Try a different search term.")
             return pd.DataFrame()
         
-        # ===== STEP 4: Wait and fetch posts =====
-        if added_sources:
-            st.info(f"🔄 Searching {', '.join(added_sources)}...")
-            time.sleep(5)
-        else:
-            st.info(f"🔄 Fetching fresh posts from existing source...")
+        # ===== STEP 4: Wait and fetch posts (WAIT LONGER FOR FACEBOOK) =====
+        st.info(f"🔄 Searching {', '.join(added_sources)}...")
+        time.sleep(10) # Increased from 5 to 10 seconds for Facebook sync!
         
         results = []
         for attempt in range(3):
@@ -176,7 +171,7 @@ def search_juicer_live(query, platforms, max_results=25):
                 f"https://api.juicer.io/v1/feeds/{feed_id}/posts",
                 headers=headers,
                 params={"limit": max_results},
-                timeout=30
+                timeout=45
             )
             
             if posts_response.status_code == 200:
@@ -185,7 +180,7 @@ def search_juicer_live(query, platforms, max_results=25):
                 if results:
                     break
             
-            time.sleep(2)
+            time.sleep(3)
         
         if not results:
             st.info(f"📢 No results found for '{query}'. Try a different search term.")
@@ -296,7 +291,7 @@ def search_juicer_live(query, platforms, max_results=25):
             st.info(f"📢 No valid video content found for '{query}'. Try a different search term.")
             return pd.DataFrame()
         
-        st.success(f"✅ Found {len(video_data)} posts from {', '.join(added_sources) if added_sources else 'existing source'}")
+        st.success(f"✅ Found {len(video_data)} posts from {', '.join(added_sources)}")
         return pd.DataFrame(video_data)
         
     except requests.exceptions.ConnectionError:
