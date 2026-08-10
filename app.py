@@ -940,7 +940,7 @@ def render_trending_carousel(video_df, title="🔥 Trending Now", max_items=8):
             st.rerun()
 
 # ============================================================
-# MAIN APP 
+# MAIN APP (FINAL UX: VISIBLE PLAY BUTTONS + BIG VIDEO)
 # ============================================================
 
 def main():
@@ -1109,15 +1109,7 @@ def main():
         }}
         .search-btn:hover {{ transform: scale(1.03); box-shadow: 0 8px 30px rgba(240, 192, 64, 0.3); }}
         
-        /* ===== HOME GRID CARDS ===== */
-        .home-btn-wrapper {{
-            background: transparent !important;
-            border: none !important;
-            padding: 0 !important;
-            margin-bottom: 15px;
-            width: 100%;
-            text-align: left;
-        }}
+        /* ===== HOME GRID CARDS (Visible Play Button) ===== */
         .home-card {{
             background: rgba(20, 20, 40, 0.85);
             border-radius: 16px;
@@ -1127,6 +1119,7 @@ def main():
             cursor: pointer;
             width: 100%;
             margin-bottom: 15px;
+            position: relative;
         }}
         .home-card:hover {{
             transform: translateY(-5px);
@@ -1143,6 +1136,48 @@ def main():
         .home-channel {{ font-size: 0.8rem; color: #aaaaaa; }}
         .home-stats {{ display: flex; justify-content: space-between; margin-top: 8px; font-size: 0.75rem; color: #888; }}
         .home-views {{ color: #f0c040; font-weight: 600; }}
+
+        /* Styling the button inside the card to look like a Play Button */
+        div[data-testid="stButton"] > button {{
+            position: absolute !important;
+            top: 50% !important;
+            left: 50% !important;
+            transform: translate(-50%, -50%) !important;
+            width: 80px !important;
+            height: 80px !important;
+            border-radius: 50% !important;
+            background: rgba(240, 192, 64, 0.9) !important;
+            color: #0a0a1a !important;
+            font-size: 2.5rem !important;
+            border: none !important;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.6) !important;
+            z-index: 10 !important;
+            transition: all 0.2s ease !important;
+            opacity: 0 !important;
+        }}
+        .home-card:hover div[data-testid="stButton"] > button {{
+            opacity: 1 !important;
+            transform: translate(-50%, -50%) scale(1.1) !important;
+        }}
+        
+        /* ===== BIGGER VIDEO PREVIEW ===== */
+        .preview-container {{
+            position: relative;
+            width: 90%; /* Much wider */
+            max-width: 1200px;
+            aspect-ratio: 16/9;
+            background: #000;
+            border-radius: 20px;
+            overflow: hidden;
+            margin: 15px auto;
+            box-shadow: 0 12px 60px rgba(0,0,0,0.8);
+            border: 1px solid rgba(255,255,255,0.05);
+        }}
+        .preview-container iframe {{
+            width: 100%;
+            height: 100%;
+            border: none;
+        }}
         
         /* ===== VIDEO CARDS ===== */
         .video-card {{
@@ -1324,7 +1359,6 @@ def main():
         show_preview = st.toggle("🎬 Show Video Preview", value=True)
         
         st.divider()
-        # Sidebar "Back to Grid" Button
         if st.button("🏠 Back to Home Grid", use_container_width=True):
             st.session_state.view_mode = "home"
             st.session_state.current_video = None
@@ -1412,12 +1446,14 @@ def main():
         
         video_df = pd.DataFrame()
         
+        # 1. If user picked YouTube or All Platforms (Fallback to YouTube)
         if platform in ["YouTube", "YouTube + Juicer (All Platforms)"]:
             st.info(f"📡 Searching YouTube...")
             video_df = search_youtube_live(api_key, search_query, max_results=25)
             if video_df.empty:
                 st.warning("⚠️ YouTube Quota Exhausted. Please wait until midnight PST for reset.")
         
+        # 2. If user picked a Juicer-only platform
         elif platform in ["Vimeo", "Reddit", "LinkedIn", "TikTok", "Instagram", "Facebook", "Twitter"]:
             st.info(f"📡 Searching {platform} via Juicer...")
             juicer_key = get_juicer_api_key()
@@ -1429,7 +1465,7 @@ def main():
                 video_df = search_juicer_live(final_query, [platform], max_results=25)
                 
                 if video_df.empty:
-                    st.warning(f"⚠️ Juicer found no results for {platform}. Try YouTube after midnight PST.")
+                    st.warning(f"⚠️ Juicer search failed for {platform} (Free tier limitation). Try YouTube after midnight PST.")
             else:
                 st.error("❌ Juicer API Key missing! Please add JUICER_API_KEY to .env")
         
@@ -1476,44 +1512,27 @@ def main():
     # 1. HOME MODE
     if st.session_state.view_mode == "home":
         st.markdown("### 🌍 Discover Trending Videos")
-        st.caption("Click any card below to start watching")
+        st.caption("Hover over a card and click the Play button to start watching!")
         
         trending_grid = video_df.sort_values(by="views", ascending=False).head(16)
         
         cols = st.columns(4)
         for idx, (_, row) in enumerate(trending_grid.iterrows()):
             with cols[idx % 4]:
-                # INVISIBLE BUTTON: It covers the card, but we hide its text
-                st.markdown(f"""
-                <style>
-                    div[data-testid="stButton"] > button {{
-                        background: transparent !important;
-                        color: transparent !important;
-                        box-shadow: none !important;
-                        border: none !important;
-                        height: 100% !important;
-                        width: 100% !important;
-                        position: absolute !important;
-                        top: 0 !important;
-                        left: 0 !important;
-                        z-index: 10 !important;
-                    }}
-                </style>
-                """, unsafe_allow_html=True)
-                
+                # Visible Play Button inside the card
                 if st.button(
-                    label=f"Click to Play", 
+                    label="▶", 
                     key=f"home_card_{idx}",
                     use_container_width=True,
-                    type="secondary"
+                    type="primary"
                 ):
                     st.session_state.current_video = row["video_id"]
                     st.session_state.view_mode = "watch"
                     st.rerun()
                 
-                # Render the beautiful card HTML
+                # Render the beautiful card HTML underneath
                 st.markdown(f"""
-                <div class="home-card" style="margin-top: -15px; position: relative; z-index: 0;">
+                <div class="home-card">
                     <img src="{row['thumbnail']}" class="home-img" alt="Thumbnail">
                     <div class="home-info">
                         <div class="home-title">{row['title'][:60]}{'...' if len(row['title']) > 60 else ''}</div>
