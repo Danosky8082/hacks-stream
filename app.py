@@ -1048,7 +1048,7 @@ def main():
     """, unsafe_allow_html=True)
     
     # ============================================================
-    # CSS - COMPLETE FIXED DARK THEME
+    # CSS - COMPLETE FIXED DARK THEME (BIGGER PREVIEW)
     # ============================================================
     st.markdown(f"""
     <style>
@@ -1109,7 +1109,7 @@ def main():
         }}
         .search-btn:hover {{ transform: scale(1.03); box-shadow: 0 8px 30px rgba(240, 192, 64, 0.3); }}
         
-        /* ===== HOME GRID CARDS (Safely handled via buttons) ===== */
+        /* ===== HOME GRID CARDS ===== */
         .home-btn-wrapper {{
             background: transparent !important;
             border: none !important;
@@ -1262,7 +1262,6 @@ def main():
         st.divider()
         
         st.markdown("#### 🌐 Platform")
-        # ===== ADDED VIMEO & REDDIT TO DROPDOWN =====
         platform_options = ["YouTube", "TikTok", "Instagram", "Facebook", "Twitter", "Vimeo", "Reddit", "LinkedIn", "YouTube + Juicer (All Platforms)"]
         platform = st.selectbox(
             "Select Content Source",
@@ -1325,6 +1324,7 @@ def main():
         show_preview = st.toggle("🎬 Show Video Preview", value=True)
         
         st.divider()
+        # Sidebar "Back to Grid" Button
         if st.button("🏠 Back to Home Grid", use_container_width=True):
             st.session_state.view_mode = "home"
             st.session_state.current_video = None
@@ -1334,14 +1334,13 @@ def main():
         st.caption("💡 I learn from your likes and skips!")
     
     # ============================================================
-    # SEARCH BAR (UPDATED PLACEHOLDER TEXT)
+    # SEARCH BAR
     # ============================================================
     st.markdown('<div class="search-container">', unsafe_allow_html=True)
     st.markdown('<div class="search-wrapper">', unsafe_allow_html=True)
     
     search_col1, search_col2, search_col3 = st.columns([5, 1, 1])
     with search_col1:
-        # The "value" is set dynamically below based on initialization
         if not st.session_state.initialized:
             default_search = "" 
         else:
@@ -1363,7 +1362,6 @@ def main():
     # ============================================================
     # INTELLIGENT DATA FETCHING LOGIC
     # ============================================================
-    # If search bar is empty and user clicks Search, we default to a random trend
     if surprise_clicked:
         search_query = random.choice([
             "AI in Africa", "Afrofuturism", "Tech innovation Nigeria", 
@@ -1378,15 +1376,13 @@ def main():
         st.session_state.initialized = True
     
     elif not st.session_state.initialized:
-        # CRITICAL FIX: Populate search_query with a valid initial search term so the API works!
         search_query = "Africa tech innovation"
         st.session_state.initialized = True
     elif not search_query:
-        # If app is initialized but the box is blank, default to a safe fallback
         search_query = "Africa tech innovation"
 
     # ============================================================
-    # FETCH REAL DATA (MIDNIGHT RESET LOGIC)
+    # FETCH REAL DATA
     # ============================================================
     if not api_key and platform != "YouTube + Juicer (All Platforms)":
         st.warning("⚠️ Please add your YouTube API key to use this app")
@@ -1416,16 +1412,12 @@ def main():
         
         video_df = pd.DataFrame()
         
-        # ================= MIDNIGHT RESET LOGIC =================
-        
-        # 1. If user picked YouTube OR "YouTube + Juicer (All Platforms)"
         if platform in ["YouTube", "YouTube + Juicer (All Platforms)"]:
             st.info(f"📡 Searching YouTube...")
             video_df = search_youtube_live(api_key, search_query, max_results=25)
             if video_df.empty:
                 st.warning("⚠️ YouTube Quota Exhausted. Please wait until midnight PST for reset.")
         
-        # 2. If user picked a Juicer-only platform (Vimeo, Reddit, etc.)
         elif platform in ["Vimeo", "Reddit", "LinkedIn", "TikTok", "Instagram", "Facebook", "Twitter"]:
             st.info(f"📡 Searching {platform} via Juicer...")
             juicer_key = get_juicer_api_key()
@@ -1440,7 +1432,6 @@ def main():
                     st.warning(f"⚠️ Juicer found no results for {platform}. Try YouTube after midnight PST.")
             else:
                 st.error("❌ Juicer API Key missing! Please add JUICER_API_KEY to .env")
-        # =========================================================
         
         progress_placeholder.markdown(f"""
         <div class="progress-container">
@@ -1470,7 +1461,7 @@ def main():
         st.stop()
     
     # ============================================================
-    # ✅ STEP 2 IMPLEMENTATION: HOME GRID VS WATCH MODE
+    # ✅ HOME GRID VS WATCH MODE
     # ============================================================
     
     # If a video was selected via URL param, switch to watch mode
@@ -1482,21 +1473,36 @@ def main():
         st.session_state.view_mode = "watch"
         st.rerun()
 
-    # 1. HOME MODE: Show a beautiful 4-column grid for discovery
+    # 1. HOME MODE
     if st.session_state.view_mode == "home":
         st.markdown("### 🌍 Discover Trending Videos")
         st.caption("Click any card below to start watching")
         
-        # Sort by views for trending homepage
         trending_grid = video_df.sort_values(by="views", ascending=False).head(16)
         
-        # Render Grid using native buttons (Fixes React Error #231)
         cols = st.columns(4)
         for idx, (_, row) in enumerate(trending_grid.iterrows()):
             with cols[idx % 4]:
-                # Create a clickable button that looks like a card
+                # INVISIBLE BUTTON: It covers the card, but we hide its text
+                st.markdown(f"""
+                <style>
+                    div[data-testid="stButton"] > button {{
+                        background: transparent !important;
+                        color: transparent !important;
+                        box-shadow: none !important;
+                        border: none !important;
+                        height: 100% !important;
+                        width: 100% !important;
+                        position: absolute !important;
+                        top: 0 !important;
+                        left: 0 !important;
+                        z-index: 10 !important;
+                    }}
+                </style>
+                """, unsafe_allow_html=True)
+                
                 if st.button(
-                    label=f"▶️ Play", 
+                    label=f"Click to Play", 
                     key=f"home_card_{idx}",
                     use_container_width=True,
                     type="secondary"
@@ -1505,9 +1511,9 @@ def main():
                     st.session_state.view_mode = "watch"
                     st.rerun()
                 
-                # Render the beautiful card HTML immediately under the button
+                # Render the beautiful card HTML
                 st.markdown(f"""
-                <div class="home-card" style="margin-top: -60px; position: relative; z-index: -1;">
+                <div class="home-card" style="margin-top: -15px; position: relative; z-index: 0;">
                     <img src="{row['thumbnail']}" class="home-img" alt="Thumbnail">
                     <div class="home-info">
                         <div class="home-title">{row['title'][:60]}{'...' if len(row['title']) > 60 else ''}</div>
@@ -1520,11 +1526,10 @@ def main():
                 </div>
                 """, unsafe_allow_html=True)
 
-    # 2. WATCH MODE: Show the detailed Video Player
+    # 2. WATCH MODE
     else:
         engine = SmartRecommendationEngine(video_df, st.session_state.user_preferences)
         
-        # === FIX: DEFINE MISSING VARIABLES FOR WATCH MODE ===
         filter_tag = st.session_state.get("filter_tag", None)
         tag_classes = {
             "tech": "tag-tech", "faith": "tag-faith", "africa": "tag-africa",
@@ -1532,7 +1537,6 @@ def main():
             "innovation": "tag-future", "christianity": "tag-faith", "ai": "tag-tech",
             "robotics": "tag-tech", "inspiration": "tag-default", "motivation": "tag-default"
         }
-        # =====================================================
 
         if "current_video" not in st.session_state or st.session_state.current_video not in video_df["video_id"].values:
             st.session_state.current_video = video_df.iloc[0]["video_id"]
@@ -1550,7 +1554,7 @@ def main():
         platform_source = current.get("platform", "YouTube")
         st.success(f"✅ Found {len(video_df)} videos about '{search_query}' from {platform_source}")
         
-        # == Big Preview ==
+        # == BIG PREVIEW ==
         if show_preview and current.get('embed_url'):
             if "youtube.com" in current['embed_url']:
                 st.markdown(f"""
@@ -1614,7 +1618,7 @@ def main():
             st.markdown("### 💡 Pro Tip")
             st.caption("The more you use the ❤️ and 👎 buttons, the smarter I get!")
         
-        # == Trending Carousel (Inserted before feedback) ==
+        # == Trending Carousel ==
         render_trending_carousel(video_df, title="🔥 Trending Now", max_items=8)
         
         # == Feedback Buttons ==
