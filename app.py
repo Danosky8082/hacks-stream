@@ -940,7 +940,7 @@ def render_trending_carousel(video_df, title="🔥 Trending Now", max_items=8):
             st.rerun()
 
 # ============================================================
-# MAIN APP (FINAL UX: VISIBLE PLAY BUTTONS + BIG VIDEO)
+# MAIN APP (FIXED: VISIBLE BUTTONS, BIGGER PREVIEW SIZED DOWN)
 # ============================================================
 
 def main():
@@ -1048,7 +1048,7 @@ def main():
     """, unsafe_allow_html=True)
     
     # ============================================================
-    # CSS - COMPLETE FIXED DARK THEME (BIGGER PREVIEW)
+    # CSS - COMPLETE FIXED DARK THEME (VISIBLE BUTTONS, BALANCED VIDEO)
     # ============================================================
     st.markdown(f"""
     <style>
@@ -1137,34 +1137,36 @@ def main():
         .home-stats {{ display: flex; justify-content: space-between; margin-top: 8px; font-size: 0.75rem; color: #888; }}
         .home-views {{ color: #f0c040; font-weight: 600; }}
 
-        /* Styling the button inside the card to look like a Play Button */
+        /* VISIBLE PLAY BUTTON INSIDE CARD */
         div[data-testid="stButton"] > button {{
             position: absolute !important;
             top: 50% !important;
             left: 50% !important;
             transform: translate(-50%, -50%) !important;
-            width: 80px !important;
-            height: 80px !important;
+            width: 60px !important;
+            height: 60px !important;
             border-radius: 50% !important;
-            background: rgba(240, 192, 64, 0.9) !important;
+            background: rgba(240, 192, 64, 1) !important;
             color: #0a0a1a !important;
-            font-size: 2.5rem !important;
-            border: none !important;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.6) !important;
+            font-size: 1.8rem !important;
+            font-weight: bold !important;
+            border: 2px solid #ffffff !important;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.7) !important;
             z-index: 10 !important;
             transition: all 0.2s ease !important;
-            opacity: 0 !important;
+            opacity: 1 !important; /* ALWAYS VISIBLE */
         }}
-        .home-card:hover div[data-testid="stButton"] > button {{
-            opacity: 1 !important;
-            transform: translate(-50%, -50%) scale(1.1) !important;
+        div[data-testid="stButton"] > button:hover {{
+            transform: translate(-50%, -50%) scale(1.15) !important;
+            background: #ffffff !important;
+            color: #0a0a1a !important;
         }}
         
-        /* ===== BIGGER VIDEO PREVIEW ===== */
+        /* ===== VIDEO PREVIEW (Balanced Size) ===== */
         .preview-container {{
             position: relative;
-            width: 90%; /* Much wider */
-            max-width: 1200px;
+            width: 75%; /* Reduced from 90% to 75% */
+            max-width: 1000px;
             aspect-ratio: 16/9;
             background: #000;
             border-radius: 20px;
@@ -1179,6 +1181,30 @@ def main():
             border: none;
         }}
         
+        /* ===== VISIBLE NAVIGATION & BACK BUTTONS ===== */
+        .nav-btn {{
+            background-color: #f0c040 !important;
+            color: #0f0f1a !important;
+            font-weight: bold !important;
+            border: none !important;
+            border-radius: 30px !important;
+        }}
+        .nav-btn:hover {{
+            background-color: #ffffff !important;
+            color: #0f0f1a !important;
+        }}
+        
+        /* Override Streamlit default invisible button colors */
+        .stButton > button[kind="secondary"] {{
+            border: 1px solid #f0c040 !important;
+            color: #f0c040 !important;
+            background: rgba(240, 192, 64, 0.1) !important;
+        }}
+        .stButton > button[kind="secondary"]:hover {{
+            background: #f0c040 !important;
+            color: #0a0a1a !important;
+        }}
+
         /* ===== VIDEO CARDS ===== */
         .video-card {{
             background: rgba(20, 20, 40, 0.85) !important;
@@ -1237,15 +1263,6 @@ def main():
             min-height: 44px !important;
             border: none !important;
             width: 100% !important;
-            background: rgba(255,255,255,0.08) !important;
-            color: #ffffff !important;
-        }}
-        .stButton > button:hover {{
-            background: rgba(240, 192, 64, 0.2) !important;
-        }}
-        .stButton > button[kind="primary"] {{
-            background: linear-gradient(135deg, #f0c040, #e6a800) !important;
-            color: #0a0a1a !important;
         }}
         
         /* ===== MODE BADGE ===== */
@@ -1359,7 +1376,9 @@ def main():
         show_preview = st.toggle("🎬 Show Video Preview", value=True)
         
         st.divider()
-        if st.button("🏠 Back to Home Grid", use_container_width=True):
+        # ===== VISIBLE BACK TO GRID BUTTON =====
+        st.markdown("### 🧭 Navigation")
+        if st.button("🏠 Back to Home Grid", use_container_width=True, type="secondary"):
             st.session_state.view_mode = "home"
             st.session_state.current_video = None
             st.rerun()
@@ -1512,14 +1531,14 @@ def main():
     # 1. HOME MODE
     if st.session_state.view_mode == "home":
         st.markdown("### 🌍 Discover Trending Videos")
-        st.caption("Hover over a card and click the Play button to start watching!")
+        st.caption("Click the large Play button on any card to start watching!")
         
         trending_grid = video_df.sort_values(by="views", ascending=False).head(16)
         
         cols = st.columns(4)
         for idx, (_, row) in enumerate(trending_grid.iterrows()):
             with cols[idx % 4]:
-                # Visible Play Button inside the card
+                # Visible, stylized Play Button
                 if st.button(
                     label="▶", 
                     key=f"home_card_{idx}",
