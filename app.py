@@ -940,7 +940,7 @@ def render_trending_carousel(video_df, title="🔥 Trending Now", max_items=8):
             st.rerun()
 
 # ============================================================
-# MAIN APP (FIXED: VISIBLE BUTTONS, BIGGER PREVIEW SIZED DOWN)
+# MAIN APP (PROFESSIONAL CLICKABLE CARDS - NO FLOATING BUTTONS)
 # ============================================================
 
 def main():
@@ -1048,7 +1048,7 @@ def main():
     """, unsafe_allow_html=True)
     
     # ============================================================
-    # CSS - COMPLETE FIXED DARK THEME (VISIBLE BUTTONS, BALANCED VIDEO)
+    # CSS - COMPLETE PROFESSIONAL DARK THEME (CLICKABLE CARDS)
     # ============================================================
     st.markdown(f"""
     <style>
@@ -1108,17 +1108,35 @@ def main():
             white-space: nowrap;
         }}
         .search-btn:hover {{ transform: scale(1.03); box-shadow: 0 8px 30px rgba(240, 192, 64, 0.3); }}
+        .surprise-btn {{
+            background: rgba(255,255,255,0.06) !important;
+            color: #ffffff !important;
+            border: 1px solid rgba(255,255,255,0.1) !important;
+            border-radius: 50px !important;
+            padding: 10px 28px !important;
+            font-weight: 600 !important;
+            font-size: 0.9rem;
+            white-space: nowrap;
+            transition: 0.2s;
+        }}
+        .surprise-btn:hover {{
+            background: rgba(240, 192, 64, 0.2) !important;
+            border-color: #f0c040 !important;
+        }}
         
-        /* ===== HOME GRID CARDS (Visible Play Button) ===== */
+        /* ===== PROFESSIONAL HOME GRID CARDS ===== */
+        .home-card-link {{
+            text-decoration: none;
+            display: block;
+            margin-bottom: 15px;
+        }}
         .home-card {{
             background: rgba(20, 20, 40, 0.85);
             border-radius: 16px;
             border: 1px solid rgba(255,255,255,0.06);
             overflow: hidden;
             transition: transform 0.2s ease, box-shadow 0.2s ease;
-            cursor: pointer;
             width: 100%;
-            margin-bottom: 15px;
             position: relative;
         }}
         .home-card:hover {{
@@ -1136,42 +1154,16 @@ def main():
         .home-channel {{ font-size: 0.8rem; color: #aaaaaa; }}
         .home-stats {{ display: flex; justify-content: space-between; margin-top: 8px; font-size: 0.75rem; color: #888; }}
         .home-views {{ color: #f0c040; font-weight: 600; }}
-
-        /* VISIBLE PLAY BUTTON INSIDE CARD */
-        div[data-testid="stButton"] > button {{
-            position: absolute !important;
-            top: 50% !important;
-            left: 50% !important;
-            transform: translate(-50%, -50%) !important;
-            width: 60px !important;
-            height: 60px !important;
-            border-radius: 50% !important;
-            background: rgba(240, 192, 64, 1) !important;
-            color: #0a0a1a !important;
-            font-size: 1.8rem !important;
-            font-weight: bold !important;
-            border: 2px solid #ffffff !important;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.7) !important;
-            z-index: 10 !important;
-            transition: all 0.2s ease !important;
-            opacity: 1 !important; /* ALWAYS VISIBLE */
-        }}
-        div[data-testid="stButton"] > button:hover {{
-            transform: translate(-50%, -50%) scale(1.15) !important;
-            background: #ffffff !important;
-            color: #0a0a1a !important;
-        }}
         
-        /* ===== VIDEO PREVIEW (Balanced Size) ===== */
+        /* ===== VIDEO PREVIEW ===== */
         .preview-container {{
             position: relative;
-            width: 75%; /* Reduced from 90% to 75% */
-            max-width: 1000px;
+            width: 100%;
             aspect-ratio: 16/9;
             background: #000;
             border-radius: 20px;
             overflow: hidden;
-            margin: 15px auto;
+            margin: 15px 0;
             box-shadow: 0 12px 60px rgba(0,0,0,0.8);
             border: 1px solid rgba(255,255,255,0.05);
         }}
@@ -1180,31 +1172,14 @@ def main():
             height: 100%;
             border: none;
         }}
-        
-        /* ===== VISIBLE NAVIGATION & BACK BUTTONS ===== */
-        .nav-btn {{
-            background-color: #f0c040 !important;
-            color: #0f0f1a !important;
-            font-weight: bold !important;
-            border: none !important;
-            border-radius: 30px !important;
-        }}
-        .nav-btn:hover {{
-            background-color: #ffffff !important;
-            color: #0f0f1a !important;
+        .preview-label {{
+            font-size: 0.75rem;
+            color: #aaaaaa !important;
+            text-align: center;
+            margin-top: 6px;
+            letter-spacing: 1px;
         }}
         
-        /* Override Streamlit default invisible button colors */
-        .stButton > button[kind="secondary"] {{
-            border: 1px solid #f0c040 !important;
-            color: #f0c040 !important;
-            background: rgba(240, 192, 64, 0.1) !important;
-        }}
-        .stButton > button[kind="secondary"]:hover {{
-            background: #f0c040 !important;
-            color: #0a0a1a !important;
-        }}
-
         /* ===== VIDEO CARDS ===== */
         .video-card {{
             background: rgba(20, 20, 40, 0.85) !important;
@@ -1263,6 +1238,15 @@ def main():
             min-height: 44px !important;
             border: none !important;
             width: 100% !important;
+            background: rgba(255,255,255,0.08) !important;
+            color: #ffffff !important;
+        }}
+        .stButton > button:hover {{
+            background: rgba(240, 192, 64, 0.2) !important;
+        }}
+        .stButton > button[kind="primary"] {{
+            background: linear-gradient(135deg, #f0c040, #e6a800) !important;
+            color: #0a0a1a !important;
         }}
         
         /* ===== MODE BADGE ===== */
@@ -1387,7 +1371,7 @@ def main():
         st.caption("💡 I learn from your likes and skips!")
     
     # ============================================================
-    # SEARCH BAR
+    # SEARCH BAR (PROFESSIONAL BUTTONS)
     # ============================================================
     st.markdown('<div class="search-container">', unsafe_allow_html=True)
     st.markdown('<div class="search-wrapper">', unsafe_allow_html=True)
@@ -1408,6 +1392,8 @@ def main():
     with search_col2:
         search_clicked = st.button("🔍 Search", use_container_width=True, type="primary")
     with search_col3:
+        # Styled as a subtle secondary button
+        st.markdown('<style>div[data-testid="column"]:nth-child(3) .stButton > button {background: rgba(255,255,255,0.06) !important; border: 1px solid rgba(255,255,255,0.1) !important; color: #fff !important;}</style>', unsafe_allow_html=True)
         surprise_clicked = st.button("🎲 Surprise!", use_container_width=True, type="secondary")
     
     st.markdown('</div></div>', unsafe_allow_html=True)
@@ -1528,40 +1514,31 @@ def main():
         st.session_state.view_mode = "watch"
         st.rerun()
 
-    # 1. HOME MODE
+    # 1. HOME MODE (Professional Clickable Cards - No Buttons)
     if st.session_state.view_mode == "home":
         st.markdown("### 🌍 Discover Trending Videos")
-        st.caption("Click the large Play button on any card to start watching!")
+        st.caption("Click any card to start watching!")
         
         trending_grid = video_df.sort_values(by="views", ascending=False).head(16)
         
         cols = st.columns(4)
         for idx, (_, row) in enumerate(trending_grid.iterrows()):
             with cols[idx % 4]:
-                # Visible, stylized Play Button
-                if st.button(
-                    label="▶", 
-                    key=f"home_card_{idx}",
-                    use_container_width=True,
-                    type="primary"
-                ):
-                    st.session_state.current_video = row["video_id"]
-                    st.session_state.view_mode = "watch"
-                    st.rerun()
-                
-                # Render the beautiful card HTML underneath
+                # Pure HTML link without ugly React onclick errors
                 st.markdown(f"""
-                <div class="home-card">
-                    <img src="{row['thumbnail']}" class="home-img" alt="Thumbnail">
-                    <div class="home-info">
-                        <div class="home-title">{row['title'][:60]}{'...' if len(row['title']) > 60 else ''}</div>
-                        <div class="home-channel">{row['channel']} · {row['platform']}</div>
-                        <div class="home-stats">
-                            <span class="home-views">👁️ {row['views']:,}</span>
-                            <span>❤️ {row['likes']:,}</span>
+                <a href="?load_video={row['video_id']}" class="home-card-link">
+                    <div class="home-card">
+                        <img src="{row['thumbnail']}" class="home-img" alt="Thumbnail">
+                        <div class="home-info">
+                            <div class="home-title">{row['title'][:60]}{'...' if len(row['title']) > 60 else ''}</div>
+                            <div class="home-channel">{row['channel']} · {row['platform']}</div>
+                            <div class="home-stats">
+                                <span class="home-views">👁️ {row['views']:,}</span>
+                                <span>❤️ {row['likes']:,}</span>
+                            </div>
                         </div>
                     </div>
-                </div>
+                </a>
                 """, unsafe_allow_html=True)
 
     # 2. WATCH MODE
@@ -1705,19 +1682,17 @@ def main():
         for idx, (_, row) in enumerate(recommendations.iterrows()):
             with rec_cols[idx % 4]:
                 st.markdown(f"""
-                <div class="rec-card">
-                    <img src="{row['thumbnail']}" style="width:100%; aspect-ratio:16/9; object-fit:cover; border-radius:14px 14px 0 0;">
-                    <div style="padding:10px;">
-                        <div class="rec-title">{row['title'][:55]}{'...' if len(row['title']) > 55 else ''}</div>
-                        <div class="rec-channel">📱 {row.get('platform', 'YouTube')} · {row['channel'][:15]}</div>
-                        <div class="rec-score">🔥 {row['engagement_score']:.1f}% match</div>
+                <a href="?load_video={row['video_id']}" style="text-decoration: none; display: block;">
+                    <div class="rec-card" style="background: rgba(20, 20, 40, 0.7) !important; border-radius: 14px; border: 1px solid rgba(255,255,255,0.04) !important; height: 100%; transition: 0.2s;">
+                        <img src="{row['thumbnail']}" style="width:100%; aspect-ratio:16/9; object-fit:cover; border-radius:14px 14px 0 0;">
+                        <div style="padding:10px;">
+                            <div class="rec-title">{row['title'][:55]}{'...' if len(row['title']) > 55 else ''}</div>
+                            <div class="rec-channel">📱 {row.get('platform', 'YouTube')} · {row['channel'][:15]}</div>
+                            <div class="rec-score">🔥 {row['engagement_score']:.1f}% match</div>
+                        </div>
                     </div>
-                </div>
+                </a>
                 """, unsafe_allow_html=True)
-                if st.button(f"▶️ Watch", key=f"rec_{idx}"):
-                    st.session_state.current_video = row["video_id"]
-                    st.rerun()
-
 
 # ============================================================
 # RUN
