@@ -940,7 +940,7 @@ def render_trending_carousel(video_df, title="🔥 Trending Now", max_items=8):
             st.rerun()
 
 # ============================================================
-# MAIN APP (FIXED JUICER FALLBACK - VIMEO & REDDIT)
+# MAIN APP 
 # ============================================================
 
 def main():
@@ -1385,7 +1385,7 @@ def main():
         # If app is initialized but the box is blank, default to a safe fallback
         search_query = "Africa tech innovation"
 
-           # ============================================================
+    # ============================================================
     # FETCH REAL DATA (MIDNIGHT RESET LOGIC)
     # ============================================================
     if not api_key and platform != "YouTube + Juicer (All Platforms)":
@@ -1490,13 +1490,24 @@ def main():
         # Sort by views for trending homepage
         trending_grid = video_df.sort_values(by="views", ascending=False).head(16)
         
-        # Render Grid using native click handling
+        # Render Grid using native buttons (Fixes React Error #231)
         cols = st.columns(4)
         for idx, (_, row) in enumerate(trending_grid.iterrows()):
             with cols[idx % 4]:
-                # Render the beautiful card HTML
+                # Create a clickable button that looks like a card
+                if st.button(
+                    label=f"▶️ Play", 
+                    key=f"home_card_{idx}",
+                    use_container_width=True,
+                    type="secondary"
+                ):
+                    st.session_state.current_video = row["video_id"]
+                    st.session_state.view_mode = "watch"
+                    st.rerun()
+                
+                # Render the beautiful card HTML immediately under the button
                 st.markdown(f"""
-                <div class="home-card" onclick="window.location.href='?load_video={row["video_id"]}'">
+                <div class="home-card" style="margin-top: -60px; position: relative; z-index: -1;">
                     <img src="{row['thumbnail']}" class="home-img" alt="Thumbnail">
                     <div class="home-info">
                         <div class="home-title">{row['title'][:60]}{'...' if len(row['title']) > 60 else ''}</div>
