@@ -940,7 +940,7 @@ def render_trending_carousel(video_df, title="🔥 Trending Now", max_items=8):
             st.rerun()
 
 # ============================================================
-# MAIN APP (FIXED: VIDEO LOADS ON SAME PAGE)
+# MAIN APP (FIXED: SECURE SAME-PAGE CLICKABLE CARDS)
 # ============================================================
 
 def main():
@@ -1125,7 +1125,7 @@ def main():
         }}
         
         /* ===== PROFESSIONAL HOME GRID CARDS ===== */
-        .home-card-click {{
+        .home-card-link {{
             text-decoration: none;
             display: block;
             margin-bottom: 15px;
@@ -1515,7 +1515,7 @@ def main():
         st.session_state.view_mode = "watch"
         st.rerun()
 
-    # 1. HOME MODE (Professional Clickable Cards - Same Page Navigation)
+    # 1. HOME MODE (Professional Clickable Cards)
     if st.session_state.view_mode == "home":
         st.markdown("### 🌍 Discover Trending Videos")
         st.caption("Click any card to start watching!")
@@ -1525,9 +1525,9 @@ def main():
         cols = st.columns(4)
         for idx, (_, row) in enumerate(trending_grid.iterrows()):
             with cols[idx % 4]:
-                # Using div with onclick to force Same-Page Navigation
+                # Using standard HTML <a> tag with target="_self" for safe same-page navigation
                 st.markdown(f"""
-                <div class="home-card-click" onclick="window.location.href='?load_video={row['video_id']}'">
+                <a href="?load_video={row['video_id']}" target="_self" class="home-card-link">
                     <div class="home-card">
                         <img src="{row['thumbnail']}" class="home-img" alt="Thumbnail">
                         <div class="home-info">
@@ -1539,7 +1539,7 @@ def main():
                             </div>
                         </div>
                     </div>
-                </div>
+                </a>
                 """, unsafe_allow_html=True)
 
     # 2. WATCH MODE
@@ -1683,7 +1683,7 @@ def main():
         for idx, (_, row) in enumerate(recommendations.iterrows()):
             with rec_cols[idx % 4]:
                 st.markdown(f"""
-                <div class="home-card-click" onclick="window.location.href='?load_video={row['video_id']}'">
+                <a href="?load_video={row['video_id']}" target="_self" style="text-decoration: none; display: block;">
                     <div class="rec-card" style="background: rgba(20, 20, 40, 0.7) !important; border-radius: 14px; border: 1px solid rgba(255,255,255,0.04) !important; height: 100%; transition: 0.2s;">
                         <img src="{row['thumbnail']}" style="width:100%; aspect-ratio:16/9; object-fit:cover; border-radius:14px 14px 0 0;">
                         <div style="padding:10px;">
@@ -1692,7 +1692,7 @@ def main():
                             <div class="rec-score">🔥 {row['engagement_score']:.1f}% match</div>
                         </div>
                     </div>
-                </div>
+                </a>
                 """, unsafe_allow_html=True)
 
 # ============================================================
