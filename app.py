@@ -753,13 +753,13 @@ class SmartRecommendationEngine:
 
 
 # ============================================================
-# RENDER FUNCTIONS - CLICKABLE CAROUSEL (WITH SCROLL BUTTONS)
+# RENDER FUNCTIONS - CLICKABLE CAROUSEL 
 # ============================================================
 
 def render_trending_carousel(video_df, title="🔥 Trending Now", max_items=8):
     """
     Renders a clickable horizontal scrollable carousel with custom scroll buttons.
-    Fixes desktop scroll issues by using Javascript buttons inside the component.
+    Uses pure HTML links to guarantee NO React errors.
     """
     if video_df.empty:
         return
@@ -814,6 +814,9 @@ def render_trending_carousel(video_df, title="🔥 Trending Now", max_items=8):
             border: 1px solid rgba(255,255,255,0.05);
             transition: transform 0.2s ease, box-shadow 0.2s ease;
             cursor: pointer;
+            text-decoration: none;
+            display: block;
+            color: inherit;
         }
         .trending-card:hover {
             transform: translateY(-4px);
@@ -824,11 +827,9 @@ def render_trending_carousel(video_df, title="🔥 Trending Now", max_items=8):
             aspect-ratio: 16/9;
             object-fit: cover;
             display: block;
-            pointer-events: none;
         }
         .trending-info {
             padding: 8px 12px 12px 12px;
-            pointer-events: none;
         }
         .trending-title {
             font-weight: 600;
@@ -892,27 +893,22 @@ def render_trending_carousel(video_df, title="🔥 Trending Now", max_items=8):
         <div class="trending-scroll-container" id="myScrollContainer">
     """
 
-    # Build the inner HTML for each card
+    # Build the inner HTML for each card using safe <a> links
     for _, row in trending_df.iterrows():
         title_clean = row['title'][:50] + ('...' if len(row['title']) > 50 else '')
         video_id = row['video_id']
         
         html_content += f"""
-        <form method="get" action="" style="display:contents;">
-            <input type="hidden" name="load_video" value="{video_id}">
-            <button type="submit" style="background:none; border:none; padding:0; cursor:pointer; width:100%;">
-                <div class="trending-card">
-                    <img src="{row['thumbnail']}" class="trending-img" alt="Thumbnail">
-                    <div class="trending-info">
-                        <div class="trending-title">{title_clean}</div>
-                        <div class="trending-meta">
-                            <span class="trending-channel">{row['channel'][:15]}</span>
-                            <span class="trending-score">🔥 {row['engagement_score']:.0f}%</span>
-                        </div>
-                    </div>
+        <a href="?load_video={video_id}" target="_self" class="trending-card">
+            <img src="{row['thumbnail']}" class="trending-img" alt="Thumbnail">
+            <div class="trending-info">
+                <div class="trending-title">{title_clean}</div>
+                <div class="trending-meta">
+                    <span class="trending-channel">{row['channel'][:15]}</span>
+                    <span class="trending-score">🔥 {row['engagement_score']:.0f}%</span>
                 </div>
-            </button>
-        </form>
+            </div>
+        </a>
         """
     
     html_content += """
