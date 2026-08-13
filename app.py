@@ -1566,18 +1566,21 @@ def main():
         platform_source = current.get("platform", "YouTube")
         st.success(f"✅ Found {len(video_df)} videos about '{search_query}' from {platform_source}")
         
-        # == BIG PREVIEW ==
+                # == BIG PREVIEW ==
         if show_preview and current.get('embed_url'):
-            if "youtube.com" in current['embed_url']:
-                st.markdown(f"""
-                <div class="preview-container">
-                    <iframe src="{current['embed_url']}?autoplay=0&rel=0" allowfullscreen></iframe>
-                </div>
-                <div class="preview-label">🎬 Preview · Click play to watch a short preview</div>
-                """, unsafe_allow_html=True)
-            else:
-                st.info(f"📱 Content from {platform_source}")
-        
+            try:
+                if "youtube.com" in current['embed_url']:
+                    st.markdown(f"""
+                    <div class="preview-container">
+                        <iframe src="{current['embed_url']}?autoplay=0&rel=0" allowfullscreen></iframe>
+                    </div>
+                    <div class="preview-label">🎬 Preview · Click play to watch a short preview</div>
+                    """, unsafe_allow_html=True)
+                else:
+                    st.info(f"📱 Content from {platform_source}")
+            except Exception as e:
+                st.warning("⚠️ Video preview could not be loaded. Click 'Watch on YouTube' to view the video.")
+
         # == Video Info ==
         col_left, col_right = st.columns([2.2, 1])
         with col_left:
